@@ -41,6 +41,8 @@ use App\Http\Controllers\Settings\SettingsDefaultEnrollmentController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\WeakDrillController;
 use App\Http\Controllers\WeakDrillResultController;
+use App\Http\Controllers\QaThreadController;
+use App\Http\Controllers\QaReplyController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -98,6 +100,7 @@ Route::middleware(['auth', 'role:student', 'active-learning'])->group(function (
     // 修了証受領(受講生自己発火、graduated は active-learning でブロックされるため新規受領不可)
     Route::post('enrollments/{enrollment}/receive-certificate', [ReceiveCertificateController::class, 'store'])
         ->name('enrollments.receiveCertificate');
+
 });
 
 // ============================================================
@@ -474,3 +477,46 @@ if (app()->environment('local')) {
         return view('_dev.components');
     })->name('_dev.components');
 }
+
+// ============================================================
+// 質問掲示板（Q&A）
+// ============================================================
+
+// 1. 受講生・コーチ・管理者 共通ルートグループ（一般表示・受講生画面用）
+Route::middleware(['auth', 'role:student,coach,admin', 'active-learning'])
+    ->prefix('qa-board')
+    ->name('qa-board.')
+    ->group(function () {
+        // スレッド（質問）操作
+        Route::get('/', [QaThreadController::class, 'index'])->name('index');
+        Route::get('create', [QaThreadController::class, 'create'])->name('create');
+        Route::post('/', [QaThreadController::class, 'store'])->name('store');
+        Route::get('{thread}', [QaThreadController::class, 'show'])->name('show');
+        Route::get('{thread}/edit', [QaThreadController::class, 'edit'])->name('edit');
+        Route::patch('{thread}', [QaThreadController::class, 'update'])->name('update');
+        Route::delete('{thread}', [QaThreadController::class, 'destroy'])->name('destroy');
+
+        // スレッド状態変更（解決 / 未解決）
+        Route::post('{thread}/resolve', [QaThreadController::class, 'resolve'])->name('resolve');
+        Route::post('{thread}/unresolve', [QaThreadController::class, 'unresolve'])->name('unresolve');
+
+        // 回答（Reply）操作
+        Route::post('{thread}/replies', [QaReplyController::class, 'store'])->name('replies.store');
+        Route::get('{thread}/replies/{reply}/edit', [QaReplyController::class, 'edit'])->name('replies.edit');
+        Route::patch('{thread}/replies/{reply}', [QaReplyController::class, 'update'])->name('replies.update');
+        Route::delete('{thread}/replies/{reply}', [QaReplyController::class, 'destroy'])->name('replies.destroy');
+});
+
+// 2. 管理者（admin）専用 モデレーションルートグループ
+Route::middleware(['auth', 'role:admin'])
+    ->prefix('admin')
+    ->name('admin.')
+    ->group(function () {
+        // スレッド（質問）のモデレーション管理
+        Route::get('qa-board', [QaThreadController::class, 'indexAsAdmin'])->name('qa-board.index');
+        Route::get('qa-board/{thread}', [QaThreadController::class, 'showAsAdmin'])->name('qa-board.show');
+        Route::delete('qa-board/{thread}', [QaThreadController::class, 'destroyAsAdmin'])->name('qa-board.destroy');
+
+        // 回答（Reply）のモデレーション削除
+        Route::delete('qa-board/{thread}/replies/{reply}', [QaReplyController::class, 'destroyAsAdmin'])->name('qa-board.replies.destroy');
+});
