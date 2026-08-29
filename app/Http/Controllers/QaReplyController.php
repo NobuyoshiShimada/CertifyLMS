@@ -4,9 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\QaReply;
 use App\Models\QaThread;
+use App\Http\Requests\QaBoad\StoreQaReplyRequest;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
-
+use Illuminate\View\View;
 /**
  * 質問スレッドに対する回答（リプライ）の投稿・削除リクエストの受付とレスポンスを制御するコントローラー。
  */
@@ -15,16 +15,12 @@ class QaReplyController extends Controller
     /**
      * 新しい回答を登録するリクエストを受け付ける。
      *
-     * @param Request $request リクエストオブジェクト
+     * @param StoreQaReplyRequest $request フォームリクエストオブジェクト
      * @param QaThread $thread 対象の質問スレッドモデル
      * @return RedirectResponse 直前の詳細画面へのリダイレクトレスポンス
      */
-    public function store(Request $request, QaThread $thread): RedirectResponse
+    public function store(StoreQaReplyRequest $request, QaThread $thread): RedirectResponse
     {
-        $request->validate([
-            'body' => 'required|string|max:5000',
-        ]);
-
         QaReply::createWithTransaction($thread, $request->user(), $request->input('body'));
 
         return back()->with('success', '回答を投稿しました。');
@@ -37,7 +33,7 @@ class QaReplyController extends Controller
      * @param QaReply $reply 編集対象の回答モデル
      * @return \Illuminate\View\View 回答編集画面のビュー
      */
-    public function edit(QaThread $thread, QaReply $reply): \Illuminate\View\View
+    public function edit(QaThread $thread, QaReply $reply): View
     {
         return view('qa-thread.reply-edit', compact('thread', 'reply'));
     }
@@ -45,12 +41,12 @@ class QaReplyController extends Controller
     /**
      * 回答の変更内容を保存するリクエストを受け付ける。
      *
-     * @param \Illuminate\Http\Request $request 入力データを含むリクエストオブジェクト
+     * @param StoreQaReplyRequest $request フォームリクエストオブジェクト
      * @param QaThread $thread 親の質問スレッドモデル
      * @param QaReply $reply 更新対象の回答モデル
      * @return \Illuminate\Http\RedirectResponse 質問詳細画面へのリダイレクトレスポンス
      */
-    public function update(\Illuminate\Http\Request $request, QaThread $thread, QaReply $reply): \Illuminate\Http\RedirectResponse
+    public function update(StoreQaReplyRequest $request, QaThread $thread, QaReply $reply): RedirectResponse
     {
         $data = $request->validate([
             'body' => 'required|string|max:5000',

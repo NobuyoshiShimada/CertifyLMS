@@ -3,14 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Enums\CertificationStatus;
-use App\Enums\QaThreadStatus;
 use App\Models\Certification;
 use App\Models\QaThread;
+use App\Http\Requests\QaBoad\StoreQaThreadRequest;
+use App\Http\Requests\QaBoad\UpdateQaThreadRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\View\View;
-
-/**
+use Illuminate\View\View;/**
  * 質問掲示板（Q&A）の質問スレッドに関するリクエスト受付とレスポンス返却を制御するコントローラー。
  */
 class QaThreadController extends Controller
@@ -62,18 +61,12 @@ class QaThreadController extends Controller
     /**
      * 新しい質問スレッドを保存するリクエストを受け付ける。
      *
-     * @param Request $request リクエストオブジェクト
+     * @param StoreQaThreadRequest $request フォームリクエストオブジェクト
      * @return RedirectResponse 質問詳細画面へのリダイレクトレスポンス
      */
-    public function store(Request $request): RedirectResponse
+    public function store(StoreQaThreadRequest $request): RedirectResponse
     {
-        $data = $request->validate([
-            'certification_id' => 'required|exists:certifications,id',
-            'title' => 'required|string|max:200',
-            'body' => 'required|string|max:5000',
-        ]);
-
-        $thread = QaThread::createWithTransaction($request->user(), $data);
+        $thread = QaThread::createWithTransaction($request->user(), $request->validated());
 
         return redirect()->route('qa-board.show', $thread)->with('success', '質問を投稿しました。');
     }
@@ -92,18 +85,13 @@ class QaThreadController extends Controller
     /**
      * 質問スレッドの変更内容を保存するリクエストを受け付ける。
      *
-     * @param Request $request 入力データを含むリクエストオブジェクト
+     * @param UpdateQaThreadRequest $request フォームリクエストオブジェクト
      * @param QaThread $thread 更新対象の質問スレッドモデル
      * @return RedirectResponse 質問詳細画面へのリダイレクトレスポンス
      */
-    public function update(Request $request, QaThread $thread): RedirectResponse
+    public function update(UpdateQaThreadRequest $request, QaThread $thread): RedirectResponse
     {
-        $data = $request->validate([
-            'title' => 'required|string|max:200',
-            'body' => 'required|string|max:5000',
-        ]);
-
-        $thread->updateWithTransaction($data);
+        $thread->updateWithTransaction($request->validated());
 
         return redirect()->route('qa-board.show', $thread)->with('success', '質問を更新しました。');
     }
