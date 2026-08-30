@@ -1,29 +1,21 @@
 <?php
 
-namespace App\Http\Requests\QaBoad;
+namespace App\Http\Requests\QaBoard;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class StoreQaReplyRequest extends FormRequest
+class StoreQaThreadRequest extends FormRequest
 {
-    /**
-     * リクエストの実行ユーザーに権限があるかどうかを判定する。
-     *
-     * @return bool 常に true
-     */
-    public function authorize(): bool
-    {
-        return true;
-    }
-
-    /**
-     * リクエストに適用するバリデーションルールを定義する.
+/**
+     * リクエストに適用するバリデーションルールを定義する。
      *
      * @return array<string, array<int, string>|string> バリデーションルールの配列
      */
     public function rules(): array
     {
         return [
+            'certification_id' => ['required', 'exists:certifications,id'],
+            'title' => ['required', 'string', 'max:200'],
             'body' => ['required', 'string', 'max:5000'],
         ];
     }
@@ -36,7 +28,9 @@ class StoreQaReplyRequest extends FormRequest
     public function attributes(): array
     {
         return [
-            'body' => '回答本文',
+            'certification_id' => '資格',
+            'title' => 'タイトル',
+            'body' => '本文',
         ];
     }
 }

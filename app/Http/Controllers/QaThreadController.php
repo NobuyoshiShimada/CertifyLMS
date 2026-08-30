@@ -5,18 +5,36 @@ namespace App\Http\Controllers;
 use App\Enums\CertificationStatus;
 use App\Models\Certification;
 use App\Models\QaThread;
-use App\Http\Requests\QaBoad\StoreQaThreadRequest;
-use App\Http\Requests\QaBoad\UpdateQaThreadRequest;
+use App\Services\QaThreadQueryService;
+use App\Http\Requests\QaBoard\StoreQaThreadRequest;
+use App\Http\Requests\QaBoard\UpdateQaThreadRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\View\View;/**
+use Illuminate\View\View;
+
+/**
  * 質問掲示板（Q&A）の質問スレッドに関するリクエスト受付とレスポンス返却を制御するコントローラー。
  */
 class QaThreadController extends Controller
 {
     /**
+     * @var QaThreadQueryService 質問スレッドの参照系クエリサービス
+     */
+    protected $qaThreadQueryService;
+
+    /**
+     * コントローラーのコンストラクタ。依存するクエリサービスを自動注入（インジェクション）する。
+     *
+     * @param QaThreadQueryService $qaThreadQueryService 質問スレッドの参照系クエリサービス
+     */
+    public function __construct(QaThreadQueryService $qaThreadQueryService)
+    {
+        $this->qaThreadQueryService = $qaThreadQueryService;
+    }
+
+    /**
      * 質問一覧画面を表示する。
-     * 各種検索フィルタ（解決状態、資格ID、キーワード）を安全に引き受けてビューに渡す。
+     * リクエストの受付と、サービスから取得したデータのレスポンス返却のみを行う。
      *
      * @param Request $request リクエストオブジェクト
      * @return View 質問一覧画面のビュー
@@ -25,20 +43,7 @@ class QaThreadController extends Controller
     {
         $filters = $request->only(['status', 'certification_id', 'keyword']);
 
-        // when内のクロージャの第2引数は型宣言を緩めるか省くのがLaravelの標準仕様です
-        $threads = QaThread::with(['user', 'certification'])
-            ->withCount('replies')
-            ->when($filters['status'] ?? null, function ($query, $status): void {
-                $query->where('status', $status);
-            })
-            ->when($filters['certification_id'] ?? null, function ($query, $certId): void {
-                $query->where('certification_id', $certId);
-            })
-            ->when($filters['keyword'] ?? null, function ($query, $keyword): void {
-                $query->where('body', 'like', "%{$keyword}%");
-            })
-            ->latest()
-            ->paginate(10);
+        $threads = $this->qaThreadQueryService->getPaginatedThreads($filters, 10);
 
         $certifications = Certification::where('status', CertificationStatus::Published)->get();
         $publishedStatus = CertificationStatus::Published;
@@ -148,9 +153,8 @@ class QaThreadController extends Controller
         return back()->with('success', '質問を未解決に戻しました。');
     }
 
-    /**
+/**
      * 管理者専用の横断モデレーション用質問一覧画面を表示する。
-     * 受講生用画面と全く同じパーツ構成に対応するため、必要な変数をすべて網羅して返却する。
      *
      * @param Request $request リクエストオブジェクト
      * @return View 管理者用質問一覧画面のビュー
@@ -159,26 +163,13 @@ class QaThreadController extends Controller
     {
         $filters = $request->only(['status', 'certification_id', 'keyword']);
 
-        $threads = QaThread::with(['user', 'certification'])
-            ->withCount('replies')
-            ->when($filters['status'] ?? null, function ($query, $status): void {
-                $query->where('status', $status);
-            })
-            ->when($filters['certification_id'] ?? null, function ($query, $certId): void {
-                $query->where('certification_id', $certId);
-            })
-            ->when($filters['keyword'] ?? null, function ($query, $keyword): void {
-                $query->where('body', 'like', "%{$keyword}%");
-            })
-            ->latest()
-            ->paginate(20);
+        $threads = $this->qaThreadQueryService->getPaginatedThreads($filters, 10);
 
         $certifications = Certification::all();
         $publishedStatus = CertificationStatus::Published;
 
         return view('qa-thread.index', compact('threads', 'certifications', 'filters', 'publishedStatus'));
     }
-
     /**
      * 管理者による質問スレッドの強制モデレーション削除リクエストを受け付ける。
      *

@@ -11,31 +11,36 @@ use App\Models\User;
 use Illuminate\Database\Seeder;
 
 /**
- * 質問掲示板（Q&A）に意味の通じる人間が読めるリアルなテストデータを散布するシーダー。
+ * 質問掲示板（Q&A）に最新の認可ルール（コーチは回答のみ）に適合したテストデータを散布するシーダー。
  */
 class QaBoardSeeder extends Seeder
 {
     /**
      * 質問掲示板の初期データ生成処理を実行する。
+     * 質問者は受講生のみに限定し、コーチは回答者としてのみデータを作成する。
      *
      * @return void
      */
     public function run(): void
     {
-        // 1. 固定のテスト用ユーザー（受講生）を用意する
+        // 1. 固定の検証用ユーザー（受講生：山田太郎）を用意する
         /** @var User $targetStudent */
         $targetStudent = User::where('role', UserRole::Student)->first()
             ?? User::factory()->create(['name' => '山田太郎', 'role' => UserRole::Student]);
 
-        // 2. 回答用のコーチや他の受講生たちのプール
+        // 2. 質問を投稿する「他の受講生」のプール（コーチはここに含まない）
+        $otherStudents = User::factory()->count(4)->create(['role' => UserRole::Student]);
+
+        // 3. 回答を投稿する「コーチ」のプールを用意する
         $coaches = User::where('role', UserRole::Coach)->get();
         if ($coaches->isEmpty()) {
             $coaches = User::factory()->count(2)->create(['role' => UserRole::Coach]);
         }
-        $otherStudents = User::factory()->count(4)->create(['role' => UserRole::Student]);
-        $usersPool = $coaches->concat($otherStudents);
 
-        // 3. 意味の通じるリアルなQ&Aテンプレート（10選）
+        // 4. 回答者全体のプール（回答は他の受講生が書き込むケースもあるため統合）
+        $repliersPool = $coaches->concat($otherStudents);
+
+        // 5. 意味の通じるリアルなQ&Aテンプレート（10選）
         $qaTemplates = collect([
             [
                 'title' => '2分探索木の平均比較回数のオーダーがイメージできません',
@@ -47,7 +52,7 @@ class QaBoardSeeder extends Seeder
             ],
             [
                 'title' => 'データベースの第3正規化を行うメリットについて',
-                'body' => "実務のデータベース設計の課題をやっています。\n第2正規化まででもデータは綺麗に分かれているように見えるのですが、あえて「主キー以外のカラムに依存している関係（推移的関数従属）」を排除して第3正規化まで行う最大のメリットは何でしょうか？更新異常の具体例などがあれば教えてほしいです。",
+                'body' => "実務のデータベース設計の課題をやっています。\n第2正規化まででもデータは綺麗に分かれているように見えるのですが、あえて「主キー以外のカラムに依存している関係（推移的関数従属）」を排除して第3正規化まで行う最大のメリットは何でしょうか？更新異常 of 具体例などがあれば教えてほしいです。",
                 'replies' => [
                     '最大のメリットは「データの不整合（矛盾）を防ぐこと」です。例えば、[社員テーブル]に[部署コード]と[部署名]が同居していた場合、その部署に所属する社員が全員退職すると、部署名というデータまでデータベースから消滅してしまいます。これを第3正規化で別テーブルに分けることで、部署データだけを独立して保持できます。'
                 ]
@@ -63,7 +68,7 @@ class QaBoardSeeder extends Seeder
                 'title' => 'Gitの merge と rebase の使い分けの基準を教えてください',
                 'body' => "チーム開発の演習を始めるにあたりGitの勉強をしています。\nブランチの履歴を統合するときに、merge を使うべきケースと、rebase を使うべきケースの一般的な使い分けの基準や、現場での運用ルールがあれば知りたいです。よろしくお願いいたします。",
                 'replies' => [
-                    '一般的な基準としては「共有ブランチ（mainやdevelop）には merge を使い、自分のローカルでの作業ブランチを最新に追従させるときには rebase を使う」ことが多いです。rebase を使うとコミット履歴が一本の直線になり見やすくなりますが、すでにリモートにプッシュした共有ブランチで rebase を行うと、他のメンバーの履歴と衝突して大混乱が起きるので絶対にNGです。'
+                    '一般的な基準としては「共有ブランチ（mainやdevelop）には merge を使い、自分のローカルでの作業ブランチを最新に追充させるときには rebase を使う」ことが多いです。rebase を使うとコミット履歴が一本の直線になり見やすくなりますが、すでにリモートにプッシュした共有ブランチで rebase を行うと、他のメンバーの履歴と衝突して大混乱が起きるので絶対にNGです。'
                 ]
             ],
             [
@@ -102,57 +107,59 @@ class QaBoardSeeder extends Seeder
                 ]
             ],
             [
-                'title' => 'CSSの Flexbox と Grid レジアウトの使い分けの明確な基準',
-                'body' => "フロントエンドの画面UIを組んでいます。\n横並びのメニューやカード一覧を作るとき、FlexboxでもGridでもどちらでも同じような見た目が作れてしまうため、どちらを選択すべきか迷うことが多いです。プロの現場ではどのように使い分けているのでしょうか？",
+                'title' => 'CSSの Flexbox と Grid レイアウトの使い分けの明確な基準',
+                'body' => "フロントエンドの画面UIを組んでいます。\n横並びのメニューやカード一覧を作るとき、FlexboxでもGridでもどちらでも同じような見た目が作れてしまうため、どちらを選択すべきか迷うことが多いです。プロの現場ではどのように使い分けているのでしょうか防？",
                 'replies' => [
                     '最も明確な基準は「1次元（直線）か、2次元（格子）か」です。Flexboxは「横一列」または「縦一列」という、1つの軸に沿ったレイアウト（1次元）に最適で、要素の幅がコンテンツに応じて柔軟に変わるメニューバーなどに適しています。一方、Gridは「縦と横の両方の位置を完全に揃えた碁盤の目（2次元）」のレイアウトに最適で、ダッシュボードの枠組みや、縦横がきっちり揃ったカード型の一覧を作るのに適しています。まずは「縦横を完全にコントロールしたいか」で考えてみてください。'
                 ]
             ]
         ]);
 
-        // 4. 現在「公開中（Published）」の資格をすべて取得する
+        // 6. 現在「公開中（Published）」の資格をすべて取得する
         $publishedCertifications = Certification::where('status', CertificationStatus::Published)->get();
         if ($publishedCertifications->isEmpty()) {
             $publishedCertifications = Certification::factory()->count(3)->create(['status' => CertificationStatus::Published]);
         }
 
-        // 5. 公開済みの資格ごとにQ&Aテンプレートを散布
-        $publishedCertifications->each(function (Certification $certification) use ($targetStudent, $usersPool, $qaTemplates): void {
+        // 7. 公開済みの資格ごとにQ&Aテンプレートを綺麗に散布
+        $publishedCertifications->each(function (Certification $certification) use ($targetStudent, $otherStudents, $coaches, $repliersPool, $qaTemplates): void {
 
-            // テンプレートをシャッフルして資格ごとに割り振る
             $shuffledTemplates = $qaTemplates->shuffle();
 
-            // 5-1. 一般の受講生たちのリアルな質問スレッドを8件作成（未解決・解決済混在）
+            // 7-1. 一般の受講生たち（Studentのみ）が投稿したリアルな質問スレッドを8件作成[1]
             for ($i = 0; $i < 8; $i++) {
                 $template = $shuffledTemplates->get($i);
                 if (!$template) break;
 
                 $createdAt = fake()->dateTimeBetween('-2 weeks', 'now');
-                $isResolved = fake()->boolean(50); // 50%の確率で解決済
+                $isResolved = fake()->boolean(50);
 
                 $thread = QaThread::factory()->create([
                     'certification_id' => $certification->id,
-                    'user_id'          => $usersPool->random()->id,
-                    'title'            => $template['title'],
-                    'body'             => $template['body'],
-                    'status'           => $isResolved ? \App\Enums\QaThreadStatus::Resolved : \App\Enums\QaThreadStatus::Unresolved,
-                    'resolved_at'      => $isResolved ? fake()->dateTimeBetween($createdAt, 'now') : null,
-                    'created_at'       => $createdAt,
-                    'updated_at'       => $createdAt,
+                    'user_id' => $otherStudents->random()->id,
+                    'title' => $template['title'],
+                    'body' => $template['body'],
+                    'status' => $isResolved ? \App\Enums\QaThreadStatus::Resolved : \App\Enums\QaThreadStatus::Unresolved,
+                    'resolved_at' => $isResolved ? fake()->dateTimeBetween($createdAt, 'now') : null,
+                    'created_at' => $createdAt,
+                    'updated_at' => $createdAt,
                 ]);
 
                 // 関連する意味の通じる回答（Reply）を紐付ける
-                foreach ($template['replies'] as $replyBody) {
+                foreach ($template['replies'] as $index => $replyBody) {
+                    // 最初の回答は高確率で「コーチ」が回答してくれているようにデータを配置[1]
+                    $replier = ($index === 0 && fake()->boolean(80)) ? $coaches->random() : $repliersPool->random();
+
                     QaReply::factory()->create([
                         'qa_thread_id' => $thread->id,
-                        'user_id'      => $usersPool->random()->id,
-                        'body'         => $replyBody,
-                        'created_at'   => fake()->dateTimeBetween($thread->created_at, 'now'),
+                        'user_id' => $replier->id,
+                        'body' => $replyBody,
+                        'created_at' => fake()->dateTimeBetween($thread->created_at, 'now'),
                     ]);
                 }
             }
 
-            // 5-2. 固定の検証用ユーザー（山田太郎）が投稿した「マイ質問」を各資格2件ずつ用意
+            // 7-2. 固定の検証用ユーザー（山田太郎：Student）が投稿した「マイ質問」を各資格2件ずつ用意[1]
             for ($i = 8; $i < 10; $i++) {
                 $template = $shuffledTemplates->get($i);
                 if (!$template) break;
@@ -161,25 +168,23 @@ class QaBoardSeeder extends Seeder
 
                 $thread = QaThread::factory()->create([
                     'certification_id' => $certification->id,
-                    'user_id'          => $targetStudent->id,
-                    'title'            => '[マイ質問] ' . $template['title'],
-                    'body'             => $template['body'],
-                    'status'           => \App\Enums\QaThreadStatus::Unresolved, // 自分の質問は一旦未解決にする（動線確認用）
-                    'resolved_at'      => null,
-                    'created_at'       => $createdAt,
-                    'updated_at'       => $createdAt,
+                    'user_id' => $targetStudent->id, // 山田太郎（受講生）
+                    'title' => '[マイ質問] ' . $template['title'],
+                    'body' => $template['body'],
+                    'status' => \App\Enums\QaThreadStatus::Unresolved, // 自分の質問は未解決にする
+                    'resolved_at' => null,
+                    'created_at' => $createdAt,
+                    'updated_at' => $createdAt,
                 ]);
-
-                // コーチ陣が自分の質問に親身に回答してくれているデータを模倣
-                if (!empty($template['replies'])) {
-                    QaReply::factory()->create([
-                        'qa_thread_id' => $thread->id,
-                        'user_id'      => $usersPool->random()->id,
-                        'body'         => $template['replies'][0], // 最初の回答をセット
-                        'created_at'   => fake()->dateTimeBetween($thread->created_at, 'now'),
+                 // マイ質問には、必ず「コーチ」が親身に回答してくれているデータを配置[1]
+                if (!empty($template['replies'])) {QaReply::factory()->create([
+                    'qa_thread_id' => $thread->id,
+                    'user_id' => $coaches->random()->id, // 確実にコーチの誰かが回答
+                    'body' => $template['replies'][0],'created_at'   => fake()->dateTimeBetween($thread->created_at, 'now'),
                     ]);
                 }
             }
         });
     }
 }
+

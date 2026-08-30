@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\QaReply;
 use App\Models\QaThread;
-use App\Http\Requests\QaBoad\StoreQaReplyRequest;
+use App\Http\Requests\QaBoard\StoreQaReplyRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 /**
