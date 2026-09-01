@@ -1,12 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Requests\QaBoard;
 
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreQaThreadRequest extends FormRequest
 {
-/**
+    /**
      * リクエストに適用するバリデーションルールを定義する。
      *
      * @return array<string, array<int, string>|string> バリデーションルールの配列

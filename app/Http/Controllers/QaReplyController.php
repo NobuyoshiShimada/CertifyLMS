@@ -1,12 +1,15 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers;
 
+use App\Http\Requests\QaBoard\StoreQaReplyRequest;
 use App\Models\QaReply;
 use App\Models\QaThread;
-use App\Http\Requests\QaBoard\StoreQaReplyRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
+
 /**
  * 質問スレッドに対する回答（リプライ）の投稿・削除リクエストの受付とレスポンスを制御するコントローラー。
  */
@@ -17,6 +20,7 @@ class QaReplyController extends Controller
      *
      * @param StoreQaReplyRequest $request フォームリクエストオブジェクト
      * @param QaThread $thread 対象の質問スレッドモデル
+     *
      * @return RedirectResponse 直前の詳細画面へのリダイレクトレスポンス
      */
     public function store(StoreQaReplyRequest $request, QaThread $thread): RedirectResponse
@@ -31,7 +35,8 @@ class QaReplyController extends Controller
      *
      * @param QaThread $thread 親の質問スレッドモデル
      * @param QaReply $reply 編集対象の回答モデル
-     * @return \Illuminate\View\View 回答編集画面のビュー
+     *
+     * @return View 回答編集画面のビュー
      */
     public function edit(QaThread $thread, QaReply $reply): View
     {
@@ -44,7 +49,8 @@ class QaReplyController extends Controller
      * @param StoreQaReplyRequest $request フォームリクエストオブジェクト
      * @param QaThread $thread 親の質問スレッドモデル
      * @param QaReply $reply 更新対象の回答モデル
-     * @return \Illuminate\Http\RedirectResponse 質問詳細画面へのリダイレクトレスポンス
+     *
+     * @return RedirectResponse 質問詳細画面へのリダイレクトレスポンス
      */
     public function update(StoreQaReplyRequest $request, QaThread $thread, QaReply $reply): RedirectResponse
     {
@@ -62,6 +68,7 @@ class QaReplyController extends Controller
      *
      * @param QaThread $thread 質問スレッドモデル
      * @param QaReply $reply 削除対象の回答モデル
+     *
      * @return RedirectResponse 直前の詳細画面へのリダイレクトレスポンス
      */
     public function destroy(QaThread $thread, QaReply $reply): RedirectResponse
@@ -77,9 +84,10 @@ class QaReplyController extends Controller
      *
      * @param QaThread $thread 該当する質問スレッドのモデルインスタンス
      * @param QaReply $reply 削除対象となる回答のモデルインスタンス
-     * @return \Illuminate\Http\RedirectResponse 直前の詳細画面へのリダイレクトレスポンス
+     *
+     * @return RedirectResponse 直前の詳細画面へのリダイレクトレスポンス
      */
-    public function destroyAsAdmin(QaThread $thread, QaReply $reply): \Illuminate\Http\RedirectResponse
+    public function destroyAsAdmin(QaThread $thread, QaReply $reply): RedirectResponse
     {
         $reply->deleteWithTransaction();
 

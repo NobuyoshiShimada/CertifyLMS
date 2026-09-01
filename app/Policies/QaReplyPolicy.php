@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Policies;
 
 use App\Enums\UserRole;
@@ -18,6 +20,7 @@ class QaReplyPolicy
      *
      * @param User $user ログイン中のユーザーインスタンス
      * @param QaThread $qaThread 回答対象の質問スレッドインスタンス
+     *
      * @return bool 投稿を許可する場合は true、それ以外は false
      */
     public function create(User $user, QaThread $qaThread): bool
@@ -31,6 +34,7 @@ class QaReplyPolicy
      *
      * @param User $user ログイン中のユーザーインスタンス
      * @param QaReply $qaReply 対象の回答インスタンス
+     *
      * @return bool 編集を許可する場合は true、それ以外は false
      */
     public function update(User $user, QaReply $qaReply): bool
@@ -44,6 +48,7 @@ class QaReplyPolicy
      *
      * @param User $user ログイン中のユーザーインスタンス
      * @param QaReply $qaReply 対象の回答インスタンス
+     *
      * @return bool 削除を許可する場合は true、それ以外は false
      */
     public function delete(User $user, QaReply $reply): bool

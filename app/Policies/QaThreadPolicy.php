@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Policies;
 
 use App\Enums\UserRole;
@@ -16,6 +18,7 @@ class QaThreadPolicy
      * 受講生（Student）のみに許可し、コーチ（Coach）は不許可とする。
      *
      * @param User $user ログイン中のユーザーインスタンス
+     *
      * @return bool 投稿を許可する場合は true、それ以外は false
      */
     public function create(User $user): bool
@@ -29,6 +32,7 @@ class QaThreadPolicy
      *
      * @param User $user ログイン中のユーザーインスタンス
      * @param QaThread $qaThread 対象の質問スレッドインスタンス
+     *
      * @return bool 編集を許可する場合は true、それ以外は false
      */
     public function update(User $user, QaThread $qaThread): bool
@@ -42,6 +46,7 @@ class QaThreadPolicy
      *
      * @param User $user ログイン中のユーザーインスタンス
      * @param QaThread $qaThread 対象の質問スレッドインスタンス
+     *
      * @return bool 削除を許可する場合は true、それ以外は false
      */
     public function delete(User $user, QaThread $qaThread): bool
@@ -55,6 +60,7 @@ class QaThreadPolicy
      *
      * @param User $user ログイン中のユーザーインスタンス
      * @param QaThread $qaThread 対象の質問スレッドインスタンス
+     *
      * @return bool 解決済への変更を許可する場合は true、それ以外は false
      */
     public function resolve(User $user, QaThread $qaThread): bool
@@ -68,6 +74,7 @@ class QaThreadPolicy
      *
      * @param User $user ログイン中のユーザーインスタンス
      * @param QaThread $qaThread 対象の質問スレッドインスタンス
+     *
      * @return bool 未解決への変更を許可する場合は true、それ以外は false
      */
     public function unresolve(User $user, QaThread $qaThread): bool

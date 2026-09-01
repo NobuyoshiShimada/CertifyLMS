@@ -1,30 +1,31 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use App\Enums\QaThreadStatus;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 /**
- *
  * @property int $id
  * @property int $user_id 投稿した受講生ID
  * @property int|null $certification_id 紐づく資格ID
  * @property string $title 質問タイトル
  * @property string $body 質問本文
  * @property QaThreadStatus $status 解決状態 (unresolved / resolved)
- * @property \Illuminate\Support\Carbon|null $resolved_at 解決日時
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- *
- * @property-read \App\Models\User $user 投稿したユーザー
- * @property-read \App\Models\Certification|null $certification 紐づく資格
- * @property-read Collection<int, \App\Models\QaReply> $replies 紐づく回答一覧
+ * @property Carbon|null $resolved_at 解決日時
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read User $user 投稿したユーザー
+ * @property-read Certification|null $certification 紐づく資格
+ * @property-read Collection<int, QaReply> $replies 紐づく回答一覧
  */
 class QaThread extends Model
 {
@@ -53,11 +54,12 @@ class QaThread extends Model
         'resolved_at' => 'datetime',
     ];
 
-/**
+    /**
      * 新しい質問スレッドをトランザクションで保存する。
      *
      * @param User $user 投稿を行うユーザーモデル
      * @param array $data 登録データ（certification_id, title, body）
+     *
      * @return self 作成された質問スレッドのインスタンス
      */
     public static function createWithTransaction(User $user, array $data): self
@@ -136,6 +138,7 @@ class QaThread extends Model
      * 質問スレッドのタイトルと本文をデータベーストランザクションで安全に更新する。
      *
      * @param array $data 更新するデータの配列（title, body）
+     *
      * @return void
      */
     public function updateWithTransaction(array $data): void
@@ -159,5 +162,4 @@ class QaThread extends Model
             $this->delete();
         });
     }
-
 }

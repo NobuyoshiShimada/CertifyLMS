@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Unit\Requests;
 
 use App\Http\Requests\QaBoard\StoreQaReplyRequest;
@@ -18,7 +20,7 @@ class StoreQaReplyRequestTest extends TestCase
      */
     public function test_validation_fails_when_body_is_empty(): void
     {
-        $request = new StoreQaReplyRequest();
+        $request = new StoreQaReplyRequest;
         $rules = $request->rules();
 
         $validator = Validator::make([
@@ -36,7 +38,7 @@ class StoreQaReplyRequestTest extends TestCase
      */
     public function test_validation_fails_when_body_exceeds_character_limit(): void
     {
-        $request = new StoreQaReplyRequest();
+        $request = new StoreQaReplyRequest;
         $rules = $request->rules();
 
         $validator = Validator::make([
@@ -54,7 +56,7 @@ class StoreQaReplyRequestTest extends TestCase
      */
     public function test_attributes_returns_friendly_japanese_label(): void
     {
-        $request = new StoreQaReplyRequest();
+        $request = new StoreQaReplyRequest;
         $attributes = $request->attributes();
 
         $this->assertEquals('回答本文', $attributes['body']);

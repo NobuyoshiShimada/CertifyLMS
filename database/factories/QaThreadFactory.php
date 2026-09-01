@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Factories;
 
 use App\Enums\QaThreadStatus;
@@ -23,14 +25,14 @@ class QaThreadFactory extends Factory
         $createdAt = $this->faker->dateTimeBetween('-3 weeks', 'now');
 
         return [
-            'user_id'          => User::factory(),
+            'user_id' => User::factory(),
             'certification_id' => Certification::factory(),
-            'title'            => '質問のタイトルがここに設定されます', // シーダー側で上書き
-            'body'             => '質問の具体的な本文がここに設定されます', // シーダー側で上書き
-            'status'           => $isResolved ? QaThreadStatus::Resolved : QaThreadStatus::Unresolved,
-            'resolved_at'      => $isResolved ? $this->faker->dateTimeBetween($createdAt, 'now') : null,
-            'created_at'       => $createdAt,
-            'updated_at'       => $this->faker->dateTimeBetween($createdAt, 'now'),
+            'title' => '質問のタイトルがここに設定されます', // シーダー側で上書き
+            'body' => '質問の具体的な本文がここに設定されます', // シーダー側で上書き
+            'status' => $isResolved ? QaThreadStatus::Resolved : QaThreadStatus::Unresolved,
+            'resolved_at' => $isResolved ? $this->faker->dateTimeBetween($createdAt, 'now') : null,
+            'created_at' => $createdAt,
+            'updated_at' => $this->faker->dateTimeBetween($createdAt, 'now'),
         ];
     }
 }

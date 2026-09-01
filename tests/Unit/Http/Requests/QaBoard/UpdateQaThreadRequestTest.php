@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Unit\Requests;
 
 use App\Http\Requests\QaBoard\UpdateQaThreadRequest;
@@ -18,7 +20,7 @@ class UpdateQaThreadRequestTest extends TestCase
      */
     public function test_validation_fails_with_empty_data(): void
     {
-        $request = new UpdateQaThreadRequest();
+        $request = new UpdateQaThreadRequest;
         $rules = $request->rules();
 
         $validator = Validator::make([
@@ -38,7 +40,7 @@ class UpdateQaThreadRequestTest extends TestCase
      */
     public function test_validation_fails_when_character_lengths_exceed_limits(): void
     {
-        $request = new UpdateQaThreadRequest();
+        $request = new UpdateQaThreadRequest;
         $rules = $request->rules();
 
         $validator = Validator::make([
@@ -58,7 +60,7 @@ class UpdateQaThreadRequestTest extends TestCase
      */
     public function test_attributes_returns_correct_japanese_labels(): void
     {
-        $request = new UpdateQaThreadRequest();
+        $request = new UpdateQaThreadRequest;
         $attributes = $request->attributes();
 
         $this->assertEquals('タイトル', $attributes['title']);

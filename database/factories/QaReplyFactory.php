@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Factories;
 
 use App\Models\QaThread;
@@ -20,10 +22,10 @@ class QaReplyFactory extends Factory
     {
         return [
             'qa_thread_id' => QaThread::factory(),
-            'user_id'      => User::factory(),
-            'body'         => $this->faker->realText(150),
-            'created_at'   => now(),
-            'updated_at'   => now(),
+            'user_id' => User::factory(),
+            'body' => $this->faker->realText(150),
+            'created_at' => now(),
+            'updated_at' => now(),
         ];
     }
 }

@@ -1,10 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature\Http\QaBoard;
 
 use App\Enums\CertificationStatus;
-use App\Enums\UserRole;
 use App\Enums\QaThreadStatus;
+use App\Enums\UserRole;
 use App\Models\Certification;
 use App\Models\QaThread;
 use App\Models\User;

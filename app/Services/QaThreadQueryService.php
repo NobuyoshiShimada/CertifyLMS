@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services;
 
 use App\Models\QaThread;
@@ -15,6 +17,7 @@ class QaThreadQueryService
      *
      * @param array $filters 検索フィルタ条件の配列（status, certification_id, keyword）
      * @param int $perPage 1ページあたりの表示件数
+     *
      * @return LengthAwarePaginator ページネーション付きの質問スレッドコレクション
      */
     public function getPaginatedThreads(array $filters, int $perPage = 10): LengthAwarePaginator
@@ -31,7 +34,7 @@ class QaThreadQueryService
                 // タイトルまたは本文の部分一致検索に強化
                 $query->where(function ($q) use ($keyword) {
                     $q->where('title', 'like', "%{$keyword}%")
-                      ->orWhere('body', 'like', "%{$keyword}%");
+                        ->orWhere('body', 'like', "%{$keyword}%");
                 });
             })
             ->latest()

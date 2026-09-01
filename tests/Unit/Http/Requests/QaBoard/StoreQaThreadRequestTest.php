@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Unit\Requests;
 
 use App\Http\Requests\QaBoard\StoreQaThreadRequest;
@@ -18,7 +20,7 @@ class QaThreadRequestTest extends TestCase
      */
     public function test_validation_fails_with_empty_data(): void
     {
-        $request = new StoreQaThreadRequest();
+        $request = new StoreQaThreadRequest;
         $rules = $request->rules();
 
         $validator = Validator::make([
@@ -38,7 +40,7 @@ class QaThreadRequestTest extends TestCase
      */
     public function test_attributes_returns_japanese_labels(): void
     {
-        $request = new StoreQaThreadRequest();
+        $request = new StoreQaThreadRequest;
         $attributes = $request->attributes();
 
         $this->assertEquals('タイトル', $attributes['title']);

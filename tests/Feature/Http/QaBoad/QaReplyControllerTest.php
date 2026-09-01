@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature\Http\QaBoard;
 
 use App\Enums\UserRole;
@@ -40,8 +42,8 @@ class QaReplyControllerTest extends TestCase
 
         $this->assertDatabaseHas('qa_replies', [
             'qa_thread_id' => $thread->id,
-            'user_id'      => $coach->id,
-            'body'         => 'コーチからの丁寧な回答テキストです。',
+            'user_id' => $coach->id,
+            'body' => 'コーチからの丁寧な回答テキストです。',
         ]);
     }
 
@@ -57,7 +59,7 @@ class QaReplyControllerTest extends TestCase
         /** @var QaReply $reply */
         $reply = QaReply::factory()->create([
             'user_id' => $student->id,
-            'body'    => '修正前の回答本文',
+            'body' => '修正前の回答本文',
         ]);
         $thread = $reply->qaThread;
 

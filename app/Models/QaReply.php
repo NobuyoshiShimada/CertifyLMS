@@ -1,26 +1,25 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-
 
 /**
- *
  * @property int $id
  * @property int $qa_thread_id 親の質問スレッドID
  * @property int $user_id 回答したユーザーID
  * @property string $body 回答本文
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- *
- * @property-read \App\Models\User $user 回答したユーザー
- * @property-read \App\Models\QaThread $qaThread 親の質問スレッド
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read User $user 回答したユーザー
+ * @property-read QaThread $qaThread 親の質問スレッド
  */
-
 class QaReply extends Model
 {
     use HasFactory;
@@ -35,12 +34,13 @@ class QaReply extends Model
         'user_id',
     ];
 
-/**
+    /**
      * 質問スレッドに対する回答をトランザクションで保存する。
      *
      * @param QaThread $thread 回答対象の質問スレッドモデル
      * @param User $user 回答を行うユーザーモデル
      * @param string $body 回答本文の文字列
+     *
      * @return self 作成された回答のインスタンス
      */
     public static function createWithTransaction(QaThread $thread, User $user, string $body): self
@@ -89,15 +89,15 @@ class QaReply extends Model
      * 回答の本文をデータベーストランザクションで安全に更新する。
      *
      * @param array $data 更新するデータの配列（body）
+     *
      * @return void
      */
     public function updateWithTransaction(array $data): void
     {
-        \Illuminate\Support\Facades\DB::transaction(function () use ($data): void {
+        DB::transaction(function () use ($data): void {
             $this->update([
                 'body' => $data['body'],
             ]);
         });
     }
-
 }

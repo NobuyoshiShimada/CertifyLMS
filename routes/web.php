@@ -25,6 +25,8 @@ use App\Http\Controllers\MockExamQuestionController;
 use App\Http\Controllers\MockExamSessionController;
 use App\Http\Controllers\MockExamSessionMonitorController;
 use App\Http\Controllers\PartController;
+use App\Http\Controllers\QaReplyController;
+use App\Http\Controllers\QaThreadController;
 use App\Http\Controllers\QuestionCategoryController;
 use App\Http\Controllers\QuizHistoryController;
 use App\Http\Controllers\QuizStatsController;
@@ -41,8 +43,6 @@ use App\Http\Controllers\Settings\SettingsDefaultEnrollmentController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\WeakDrillController;
 use App\Http\Controllers\WeakDrillResultController;
-use App\Http\Controllers\QaThreadController;
-use App\Http\Controllers\QaReplyController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -505,7 +505,7 @@ Route::middleware(['auth', 'role:student,coach,admin', 'active-learning'])
         Route::get('{thread}/replies/{reply}/edit', [QaReplyController::class, 'edit'])->name('replies.edit');
         Route::patch('{thread}/replies/{reply}', [QaReplyController::class, 'update'])->name('replies.update');
         Route::delete('{thread}/replies/{reply}', [QaReplyController::class, 'destroy'])->name('replies.destroy');
-});
+    });
 
 // 2. 管理者（admin）専用 モデレーションルートグループ
 Route::middleware(['auth', 'role:admin'])
@@ -519,4 +519,4 @@ Route::middleware(['auth', 'role:admin'])
 
         // 回答（Reply）のモデレーション削除
         Route::delete('qa-board/{thread}/replies/{reply}', [QaReplyController::class, 'destroyAsAdmin'])->name('qa-board.replies.destroy');
-});
+    });

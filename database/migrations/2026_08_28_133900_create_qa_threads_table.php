@@ -1,5 +1,9 @@
 <?php
 
+declare(strict_types=1);
+
+use App\Models\Certification;
+use App\Models\User;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -13,8 +17,8 @@ return new class extends Migration
     {
         Schema::create('qa_threads', function (Blueprint $table) {
             $table->id();
-            $table->foreignIdFor(\App\Models\User::class)->constrained()->cascadeOnDelete();
-            $table->foreignIdFor(\App\Models\Certification::class)->nullable()->constrained()->nullOnDelete();
+            $table->foreignIdFor(User::class)->constrained()->cascadeOnDelete();
+            $table->foreignIdFor(Certification::class)->nullable()->constrained()->nullOnDelete();
             $table->string('title', 200);
             $table->text('body');
             $table->string('status')->default('unresolved');

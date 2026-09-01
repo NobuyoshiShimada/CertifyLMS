@@ -1,8 +1,9 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Unit\Services;
 
-use App\Enums\QaThreadStatus;
 use App\Models\QaThread;
 use App\Services\QaThreadQueryService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -27,7 +28,7 @@ class QaThreadQueryServiceTest extends TestCase
         // ヒットしてはいけないデータ
         QaThread::factory()->create(['title' => 'Dockerの環境構築']);
 
-        $service = new QaThreadQueryService();
+        $service = new QaThreadQueryService;
         $result = $service->getPaginatedThreads(['keyword' => 'Git']);
 
         $this->assertEquals(1, $result->total());
