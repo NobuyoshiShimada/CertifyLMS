@@ -43,6 +43,7 @@ use App\Http\Controllers\Settings\SettingsDefaultEnrollmentController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\WeakDrillController;
 use App\Http\Controllers\WeakDrillResultController;
+use App\Http\Controllers\NotificationController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -519,4 +520,19 @@ Route::middleware(['auth', 'role:admin'])
 
         // 回答（Reply）のモデレーション削除
         Route::delete('qa-board/{thread}/replies/{reply}', [QaReplyController::class, 'destroyAsAdmin'])->name('qa-board.replies.destroy');
+    });
+
+// ============================================================
+// 通知
+// ============================================================
+
+// 1. 受講生・コーチ 共通ルートグループ（一般表示・受講生画面用）
+Route::middleware(['auth'])
+    ->prefix('notifications')
+    ->name('notifications.')
+    ->group(function () {
+        Route::get('/', [NotificationController::class, 'index'])->name('index');
+        Route::get('/{notification}', [NotificationController::class, 'show'])->name('show');
+        Route::post('/{notifications}/read', [NotificationController::class, 'read'])->name('markAsRead');
+        Route::post('/read-all', [NotificationController::class, 'markAllAsRead'])->name('markAllAsRead');
     });
