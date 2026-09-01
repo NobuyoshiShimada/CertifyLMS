@@ -32,6 +32,6 @@ class QaThreadQueryServiceTest extends TestCase
         $result = $service->getPaginatedThreads(['keyword' => 'Git']);
 
         $this->assertEquals(1, $result->total());
-        $this->assertEquals('Gitの使い方について', $result->first->title);
+        $this->assertEquals('Gitの使い方について', collect($result->items())->first()->title);
     }
 }
