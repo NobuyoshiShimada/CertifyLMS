@@ -310,4 +310,24 @@ class User extends Authenticatable
     {
         return $query->whereIn('status', [UserStatus::InProgress, UserStatus::Graduated]);
     }
+
+    /**
+     * ユーザーが投稿した質問スレッド一覧との一対多リレーションを取得する。
+     *
+     * @return HasMany
+     */
+    public function qaThreads(): HasMany
+    {
+        return $this->hasMany(QaThread::class);
+    }
+
+    /**
+     * ユーザーが投稿した回答一覧との一対多リレーションを取得する。
+     *
+     * @return HasMany
+     */
+    public function qaReplies(): HasMany
+    {
+        return $this->hasMany(QaReply::class);
+    }
 }
