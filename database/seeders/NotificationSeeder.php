@@ -1,18 +1,28 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Seeders;
 
 use App\Enums\UserRole;
 use App\Models\User;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Str;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
+/**
+ * Class NotificationSeeder
+ *
+ * 通知機能の表示・ページネーション・リダイレクト検証用のテストデータを生成するシーダー。
+ * 既存のUserFactoryおよびQ&A掲示板のルーティング体系に完全適合しています。
+ */
 class NotificationSeeder extends Seeder
 {
     /**
      * Run the database seeds.
+     *
+     * @return void
      */
     public function run(): void
     {
@@ -23,12 +33,14 @@ class NotificationSeeder extends Seeder
         $coach = User::where('role', UserRole::Coach->value)->first()
             ?? User::factory()->coach()->create(['name' => 'テストコーチ']);
 
-        // 古い通知データを一度綺麗にリセット
+        // 古い通知データを一度綺麗にリセット（重複・404データの蓄積防止）
         DB::table('notifications')->truncate();
 
         $notifications = [];
 
+        // -------------------------------------------------------------
         // 受講生宛て通知：種別A (Q&A返信 - 外部画面リダイレクト型)
+        // -------------------------------------------------------------
         for ($i = 1; $i <= 12; $i++) {
             $notifications[] = [
                 'id' => Str::uuid()->toString(),
@@ -38,8 +50,9 @@ class NotificationSeeder extends Seeder
                 'data' => json_encode([
                     'notification_type' => 'qa_reply_received',
                     'title' => "【質問回答】レッスン{$i}について回答が届きました",
-                    'message' => "コーチから「Laravelの設計思想について」の質問に新しいアドバイスがあります。",
-                    'url' => "/questions/{$i}",
+                    'message' => 'コーチから「Laravelの設計思想について」の質問に新しいアドバイスがあります。',
+                    // 【404解消】実際のルーティングである /qa-board/ パスへ修正
+                    'url' => "/qa-board/{$i}",
                 ]),
                 'read_at' => $i % 3 === 0 ? Carbon::now()->subHours($i) : null, // 既読・未読を混在
                 'created_at' => Carbon::now()->subHours($i),
@@ -47,7 +60,9 @@ class NotificationSeeder extends Seeder
             ];
         }
 
+        // -------------------------------------------------------------
         // 受講生宛て通知：種別B (課題添削 - 外部画面リダイレクト型)
+        // -------------------------------------------------------------
         for ($i = 1; $i <= 8; $i++) {
             $notifications[] = [
                 'id' => Str::uuid()->toString(),
@@ -57,7 +72,7 @@ class NotificationSeeder extends Seeder
                 'data' => json_encode([
                     'notification_type' => 'completion_approved',
                     'title' => "【課題添削】第{$i}章のレビューが完了しました",
-                    'message' => "提出いただいたソースコードの添削結果とコメントが届いています。",
+                    'message' => '提出いただいたソースコードの添削結果とコメントが届いています。',
                     'url' => "/assignments/{$i}/review",
                 ]),
                 'read_at' => $i % 2 === 0 ? Carbon::now()->subDays($i) : null,
@@ -66,7 +81,9 @@ class NotificationSeeder extends Seeder
             ];
         }
 
+        // -------------------------------------------------------------
         // 受講生宛て通知：種別C (運営からのお知らせ - 自己完結型詳細ページ遷移)
+        // -------------------------------------------------------------
         for ($i = 1; $i <= 5; $i++) {
             $notifications[] = [
                 'id' => Str::uuid()->toString(),
@@ -76,7 +93,7 @@ class NotificationSeeder extends Seeder
                 'data' => json_encode([
                     'notification_type' => 'admin_announcement',
                     'title' => "【重要】システムメンテナンスのお知らせ (Vol.{$i})",
-                    'message' => "サービス向上のための定期メンテナンスの実施スケジュールについてのお知らせです。",
+                    'message' => 'サービス向上のための定期メンテナンスの実施スケジュールについてのお知らせです。',
                     'body' => "受講生の皆様へ\n\nいつもカリキュラムをご利用いただきありがとうございます。\nこちらは運営事務局からの定期アナウンス（第{$i}回）です。\n\nより快適な学習環境を提供するため、サーバーのアップデート作業を行います。\n何卒ご理解とご協力のほどよろしくお願いいたします。",
                 ]),
                 'read_at' => null,
@@ -85,7 +102,9 @@ class NotificationSeeder extends Seeder
             ];
         }
 
+        // -------------------------------------------------------------
         // コーチ宛て通知：種別D（Q&A投稿、課題提出）
+        // -------------------------------------------------------------
         for ($i = 1; $i <= 5; $i++) {
             $notifications[] = [
                 'id' => Str::uuid()->toString(),
@@ -94,9 +113,10 @@ class NotificationSeeder extends Seeder
                 'notifiable_id' => $coach->id,
                 'data' => json_encode([
                     'notification_type' => 'qa_reply_received',
-                    'title' => "【新着質問】受講生から新しい質問が入りました",
-                    'message' => "受講生の佐藤さんが「環境構築時のマイグレーションエラー」について質問しています。",
-                    'url' => "/questions/coach-view/{$i}",
+                    'title' => '【新着質問】受講生から新しい質問が入りました',
+                    'message' => '受講生の佐藤さんが「環境構築時のマイグレーションエラー」について質問しています。',
+                    // 【404解消】実際のルーティングである /qa-board/ パスへ修正
+                    'url' => "/qa-board/{$i}",
                 ]),
                 'read_at' => null,
                 'created_at' => Carbon::now()->subMinutes($i * 15),
@@ -104,8 +124,7 @@ class NotificationSeeder extends Seeder
             ];
         }
 
-        // データベースへまとめて挿入
+        // データベースへまとめて一括挿入
         DB::table('notifications')->insert($notifications);
-
     }
 }

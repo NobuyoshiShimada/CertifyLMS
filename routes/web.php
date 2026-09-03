@@ -24,6 +24,7 @@ use App\Http\Controllers\MockExamController;
 use App\Http\Controllers\MockExamQuestionController;
 use App\Http\Controllers\MockExamSessionController;
 use App\Http\Controllers\MockExamSessionMonitorController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PartController;
 use App\Http\Controllers\QaReplyController;
 use App\Http\Controllers\QaThreadController;
@@ -43,7 +44,6 @@ use App\Http\Controllers\Settings\SettingsDefaultEnrollmentController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\WeakDrillController;
 use App\Http\Controllers\WeakDrillResultController;
-use App\Http\Controllers\NotificationController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -533,6 +533,6 @@ Route::middleware(['auth'])
     ->group(function () {
         Route::get('/', [NotificationController::class, 'index'])->name('index');
         Route::get('/{notification}', [NotificationController::class, 'show'])->name('show');
-        Route::post('/{notifications}/read', [NotificationController::class, 'read'])->name('markAsRead');
+        Route::post('/{notification}/read', [NotificationController::class, 'read'])->name('markAsRead');
         Route::post('/read-all', [NotificationController::class, 'markAllAsRead'])->name('markAllAsRead');
     });

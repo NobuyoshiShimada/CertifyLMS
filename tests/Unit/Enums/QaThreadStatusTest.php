@@ -23,4 +23,3 @@ class QaThreadStatusTest extends TestCase
         $this->assertEquals('解決済', QaThreadStatus::Resolved->label());
     }
 }
-

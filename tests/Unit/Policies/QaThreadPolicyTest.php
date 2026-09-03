@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Unit\Policies;
 
 use App\Enums\UserRole;
@@ -24,7 +26,7 @@ class QaThreadPolicyTest extends TestCase
         /** @var User $coach */
         $coach = User::factory()->make(['role' => UserRole::Coach]);
 
-        $policy = new QaThreadPolicy();
+        $policy = new QaThreadPolicy;
 
         $this->assertTrue($policy->create($student));
         $this->assertFalse($policy->create($coach));
