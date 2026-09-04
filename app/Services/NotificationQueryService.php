@@ -35,6 +35,7 @@ class NotificationQueryService
             ->when($onlyUnread, function ($query) {
                 return $query->unread();
             })
+            ->with(['notifiable'])
             ->orderBy('created_at', 'desc')
             ->paginate($perPage);
     }

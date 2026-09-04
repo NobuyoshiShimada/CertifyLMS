@@ -56,16 +56,18 @@ class NotificationController extends Controller
         $notifications = $this->notificationQuery->getPaginatedNotificationsForUser($user, $onlyUnread);
 
         // 型安全を完全に担保しエディタのエラーを排除するビルダー直接駆動クエリ
-        $unreadCount = DatabaseNotification::where('notifiable_id', $user->id)
-            ->where('notifiable_type', get_class($user))
-            ->unread()
-            ->count();
+        $unreadCount = DatabaseNotification::where('notifiable_id', (string) $user->id)
+            ->where(function ($query) {
+                $query->where('notifiable_type', 'App\Models\User')
+                    ->orWhere('notifiable_type', 'User');
+            })
+            ->unread()->count();
 
         return view('notifications.index', compact('notifications', 'unreadCount', 'tab'));
     }
 
     /**
-     * 通知詳細ページの表示（自己完結型お知らせ用）
+     * 通知詳細ページの表示
      *
      * 運営からのお知らせなど、外部への遷移先URLを持たない通知の全文を表示します。
      *
@@ -110,7 +112,7 @@ class NotificationController extends Controller
         $data = $notification->data;
         $type = $data['notification_type'] ?? null;
 
-        // 自己完結型の通知（運営お知らせなど）、またはURLが空の場合は独自の詳細画面へリダイレクト
+        // 自己完結型の通知、またはURLが空の場合は独自の詳細画面へリダイレクト
         if ($type === 'admin_announcement' || empty($data['url'])) {
             return redirect()->route('notifications.show', ['notification' => $notification->id]);
         }
@@ -131,8 +133,7 @@ class NotificationController extends Controller
 
         DatabaseNotification::where('notifiable_id', (string) $user->id)
             ->where(function ($query) {
-                $query->where('notifiable_type', 'App\Models\User')
-                    ->orWhere('notifiable_type', 'User');
+                $query->where('notifiable_type', 'App\Models\User')->orWhere('notifiable_type', 'User');
             })
             ->unread()
             ->update(['read_at' => now()]);

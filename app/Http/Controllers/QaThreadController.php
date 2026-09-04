@@ -13,6 +13,7 @@ use App\Models\QaThread;
 use App\Models\User;
 use App\Notifications\NewQuestionPostedNotification;
 use App\Services\QaThreadQueryService;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Notifications\DatabaseNotification;
@@ -217,50 +218,63 @@ class QaThreadController extends Controller
     }
 
     /**
-     * 管理者専用の横断モデレーション用質問一覧画面を表示する。
+     * 【管理者専用】モデレーション用：質問スレッドの一覧画面を表示する。
      *
-     * @param Request $request リクエストオブジェクト
+     * @param Request $request HTTPリクエストオブジェクト
      *
-     * @return View 管理者用質問一覧画面のビュー
+     * @return View 質問一覧画面のBladeビューレスポンス
      */
     public function indexAsAdmin(Request $request): View
     {
-        $filters = $request->only(['status', 'certification_id', 'keyword']);
+        $threads = QaThread::query()
+            ->with(['user'])
+            ->withCount(['replies'])
+            ->orderBy('created_at', 'desc')
+            ->paginate(20);
 
-        $threads = $this->qaThreadQueryService->getPaginatedThreads($filters, 10);
-
-        $certifications = Certification::all();
-        $publishedStatus = CertificationStatus::Published;
-
-        return view('qa-thread.index', compact('threads', 'certifications', 'filters', 'publishedStatus'));
+        // 管理者用のビュー（例: admin.qa_board.index など、実際のパスに合わせて調整してください）
+        return view('admin.qa_board.index', compact('threads'));
     }
 
     /**
-     * 管理者による質問スレッドの強制モデレーション削除リクエストを受け付ける。
+     * 【管理者専用】モデレーション用：指定された質問スレッドの強制削除処理を行う。
      *
-     * @param QaThread $thread 削除対象の質問スレッドモデル
+     * 管理者は受講生向けの削除制限（回答付きスレッドの削除ブロック）をすべてバイパスして強制削除できます。
      *
-     * @return RedirectResponse 管理者用質問一覧画面へのリダイレクトレスポンス
+     * @param Request $request HTTPリクエストオブジェクト
+     * @param QaThread $thread ルートモデルバインディングされた削除対象の質問スレッド
+     *
+     * @return RedirectResponse 管理者用質問一覧画面（admin.qa-board.index）へのリダイレクトレスポンス
      */
-    public function destroyAsAdmin(QaThread $thread): RedirectResponse
+    public function destroyAsAdmin(Request $request, QaThread $thread): RedirectResponse
     {
-        $thread->deleteWithTransaction();
+        // 管理者特権による強制削除の実行
+        $thread->delete();
 
-        return redirect()->route('admin.qa-board.index')->with('success', '質問をモデレーション削除しました。');
+        // 整合性を保つため、削除されたスレッドに関連する通知レコードも連動して自動クリーンアップ
+        DatabaseNotification::where('data->url', "/qa-board/{$thread->id}")->delete();
+
+        return redirect()->route('admin.qa-board.index')
+            ->with('success', '管理者権限により、質問スレッドをモデレーション削除しました。');
     }
 
     /**
-     * 管理者専用の質問スレッド詳細（モデレーション）画面を表示する。
-     * スレッド本体、投稿ユーザー、関連する回答一覧を一括で取得してビューに返却する。
+     * 【管理者専用】モデレーション用：指定された質問スレッドの詳細画面を表示する。
      *
-     * @param QaThread $thread 該当する質問スレッドのモデルインスタンス
+     * @param string $thread 質問スレッドのID（URLパラメータ）
      *
-     * @return View 管理者用質問詳細画面のビュー
+     * @return View 質問スレッド詳細画面のBladeビューレスポンス
+     *
+     * @throws ModelNotFoundException 指定されたスレッドが存在しない場合
      */
-    public function showAsAdmin(QaThread $thread): View
+    public function showAsAdmin(string $thread): View
     {
-        $thread->load(['user', 'certification', 'replies.user']);
+        $qaThread = QaThread::query()
+            ->with(['certification', 'user', 'replies.user'])
+            ->withCount(['replies'])
+            ->findOrFail($thread);
 
-        return view('qa-thread.show', compact('thread'));
+        // 管理者用の詳細ビュー（例: admin.qa_board.show など、実際のパスに合わせて調整してください）
+        return view('admin.qa_board.show', ['thread' => $qaThread]);
     }
 }

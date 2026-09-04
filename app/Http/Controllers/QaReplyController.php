@@ -29,30 +29,47 @@ class QaReplyController extends Controller
     {
         $reply = QaReply::createWithTransaction($thread, $request->user(), $request->input('body'));
 
-        $thread = QaThread::findOrFail($thread->id);
+        $thread->load(['user']);
 
-        // 2. 通知対象（当事者＝質問を投稿した受講生本人）を特定
-        /** @var User $student */
-        $student = $thread->user; // スレッドを投稿したユーザー（リレーション）
+        $student = $thread->user;
 
-        // コーチ自身が自分の質問に回答した場合などは通知をスキップするガードロジック
         if ($student && $student->id !== $request->user()->id) {
-            /** @var User $currentUser */
             $currentUser = $request->user();
 
-            // 3. 通知クラスに渡すデータのパッキング（実際のqa-boardパスに完全適合）
             $payload = [
                 'title' => "「{$thread->title}」について回答が届きました",
                 'message' => "コーチの {$currentUser->name} さんがあなたの質問に回答を投稿しました。",
-                'url' => "/qa-board/{$thread->id}", // クリック時に直接そのQ&Aスレッドに飛ぶパス
+                'url' => "/qa-board/{$thread->id}",
             ];
 
-            // 4. 受講生へピンポイントでデータベース通知を発行
             $student->notify(new QuestionRepliedNotification($payload));
         }
 
         return back()->with('success', '回答を投稿しました。');
     }
+
+    // 2. 通知対象（当事者＝質問を投稿した受講生本人）を特定
+    /** @var User */
+    //     $student = $thread->user; // スレッドを投稿したユーザー（リレーション）
+
+    //     // コーチ自身が自分の質問に回答した場合などは通知をスキップするガードロジック
+    //     if ($student && $student->id !== $request->user()->id) {
+    //         /** @var User $currentUser */
+    //         $currentUser = $request->user();
+
+    //         // 3. 通知クラスに渡すデータのパッキング（実際のqa-boardパスに完全適合）
+    //         $payload = [
+    //             'title' => "「{$thread->title}」について回答が届きました",
+    //             'message' => "コーチの {$currentUser->name} さんがあなたの質問に回答を投稿しました。",
+    //             'url' => "/qa-board/{$thread->id}", // クリック時に直接そのQ&Aスレッドに飛ぶパス
+    //         ];
+
+    //         // 4. 受講生へピンポイントでデータベース通知を発行
+    //         $student->notify(new QuestionRepliedNotification($payload));
+    //     }
+
+    //     return back()->with('success', '回答を投稿しました。');
+    // }
 
     /**
      * 指定された回答の編集画面を表示する。
@@ -84,7 +101,8 @@ class QaReplyController extends Controller
 
         $reply->updateWithTransaction($data);
 
-        return redirect()->route('qa-board.show', $thread)->with('success', '回答を更新しました。');
+        return redirect()->route('qa-board.show', ['thread' => $thread->id])
+            ->with('success', '回答を更新しました。');
     }
 
     /**

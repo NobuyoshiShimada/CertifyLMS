@@ -27,7 +27,13 @@ class DatabaseNotificationPolicy
      */
     public function update(User $user, DatabaseNotification $notification): bool
     {
-        return $notification->notifiable_id === $user->id
-        && $notification->notifiable_type === get_class($user);
+        $isSameId = (string) $notification->notifiable_type;
+
+        $notifiableType = $notification->notifiable_type;
+        $isSameType = $notifiableType === 'App\Models\User'
+        || $notifiableType === 'User'
+        || $notifiableType === get_class($user);
+
+        return $isSameId && $isSameType;
     }
 }
