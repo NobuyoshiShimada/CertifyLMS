@@ -96,7 +96,7 @@ class NotificationSeeder extends Seeder
                     'message' => 'サービス向上のための定期メンテナンスの実施スケジュールについてのお知らせです。',
                     'body' => "受講生の皆様へ\n\nいつもカリキュラムをご利用いただきありがとうございます。\nこちらは運営事務局からの定期アナウンス（第{$i}回）です。\n\nより快適な学習環境を提供するため、サーバーのアップデート作業を行います。\n何卒ご理解とご協力のほどよろしくお願いいたします。",
                 ]),
-                'read_at' => null,
+                'read_at' => $i % 2 === 0 ? Carbon::now()->subDays($i + 10) : null, // 既読・未読を混在
                 'created_at' => Carbon::now()->subDays($i + 10),
                 'updated_at' => Carbon::now()->subDays($i + 10),
             ];
@@ -118,7 +118,7 @@ class NotificationSeeder extends Seeder
                     // 【404解消】実際のルーティングである /qa-board/ パスへ修正
                     'url' => "/qa-board/{$i}",
                 ]),
-                'read_at' => null,
+                'read_at' => $i % 2 === 0 ? Carbon::now()->subMinutes($i * 15) : null, // 既読・未読を混在
                 'created_at' => Carbon::now()->subMinutes($i * 15),
                 'updated_at' => Carbon::now()->subMinutes($i * 15),
             ];

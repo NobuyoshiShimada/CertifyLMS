@@ -27,7 +27,7 @@ class DatabaseNotificationPolicy
      */
     public function update(User $user, DatabaseNotification $notification): bool
     {
-        $isSameId = (string) $notification->notifiable_type;
+        $isSameId = (string) $notification->notifiable_id === (string) $user->id;
 
         $notifiableType = $notification->notifiable_type;
         $isSameType = $notifiableType === 'App\Models\User'

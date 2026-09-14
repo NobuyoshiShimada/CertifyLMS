@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Notifications;
 
 use Illuminate\Bus\Queueable;
+use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
 /**
@@ -42,7 +43,7 @@ class QuestionRepliedNotification extends Notification
      */
     public function via(mixed $notifiable): array
     {
-        return ['database'];
+        return ['database', 'mail'];
     }
 
     /**
@@ -60,5 +61,22 @@ class QuestionRepliedNotification extends Notification
             'message' => $this->replyData['message'],
             'url' => $this->replyData['url'], // 既読化・リダイレクト用の遷移先業務URL（/qa-board/{thread}）
         ];
+    }
+
+    /**
+     * 送信される通知メールのテキストおよび構造の定義
+     *
+     * @param mixed $notifiable 通知を受信する受講生
+     *
+     * @return MailMessage 生成されたメールメッセージオブジェクト
+     */
+    public function toMail(mixed $notifiable): MailMessage
+    {
+        return (new MailMessage)
+            ->subject('【LMS】'.$this->replyData['title'])
+            ->greeting("{$notifiable->name} 様")
+            ->line($this->replyData['message'])
+            ->action('質問スレッドを確認する', url($this->replyData['url']))
+            ->line('ご確認のほど、よろしくお願いいたします。');
     }
 }

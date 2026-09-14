@@ -85,7 +85,7 @@ class QaThreadController extends Controller
     {
         $thread = QaThread::createWithTransaction($request->user(), $request->validated());
 
-        $coaches = User::where('role', UserRole::Coach->value)->get();
+        $coaches = User::where('role', UserRole::Coach->value)->active()->get();
 
         if ($coaches->isNotEmpty()) {
             /** @var User $currentUser */

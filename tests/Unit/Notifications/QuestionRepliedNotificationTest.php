@@ -16,13 +16,14 @@ use Tests\TestCase;
 class QuestionRepliedNotificationTest extends TestCase
 {
     /**
-     * アプリ内通知データベースチャンネルのみが選択され、data構造が正しいか検証する。
+     * データベースとメールの即時同時配信チャンネルが選択され、data構造が正しいか検証する。
      *
      * @return void
      */
-    public function test_it_configures_database_only_channel_with_correct_payload(): void
+    public function test_it_configures_database_and_mail_channels_with_correct_payload(): void
     {
         $mockUser = \Mockery::mock(User::class);
+        $mockUser->shouldReceive('getAttribute')->with('name')->andReturn('受講生太郎');
 
         $inputData = [
             'title' => '回答が届きました',
@@ -32,13 +33,17 @@ class QuestionRepliedNotificationTest extends TestCase
 
         $notification = new QuestionRepliedNotification($inputData);
 
-        // MVPスコープ通り、データベースのみであることをアサート
-        $this->assertSame(['database'], $notification->via($mockUser));
+        // 配信先アサーション
+        $this->assertSame(['database', 'mail'], $notification->via($mockUser));
 
         // DBペイロードアサーション
         $dbData = $notification->toDatabase($mockUser);
         $this->assertSame('qa_reply_received', $dbData['notification_type']);
         $this->assertSame('【質問回答】回答が届きました', $dbData['title']);
         $this->assertSame('/qa-board/12', $dbData['url']);
+
+        // メールオブジェクトアサーション
+        $mailData = $notification->toMail($mockUser);
+        $this->assertSame('【LMS】回答が届きました', $mailData->subject);
     }
 }
