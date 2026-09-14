@@ -8,7 +8,6 @@ use App\Enums\UserStatus;
 use App\Http\Requests\QaBoard\StoreQaReplyRequest;
 use App\Models\QaReply;
 use App\Models\QaThread;
-use App\Models\User;
 use App\Notifications\QuestionRepliedNotification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;

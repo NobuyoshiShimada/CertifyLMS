@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\Auth\OnboardingController;
 use App\Http\Controllers\BrowseController;
 use App\Http\Controllers\CertificationCatalogController;
@@ -520,6 +521,20 @@ Route::middleware(['auth', 'role:admin'])
 
         // 回答（Reply）のモデレーション削除
         Route::delete('qa-board/{thread}/replies/{reply}', [QaReplyController::class, 'destroyAsAdmin'])->name('qa-board.replies.destroy');
+    });
+
+// ============================================================
+// お知らせ配信（管理者）
+// ============================================================
+
+Route::middleware(['auth', 'role:admin'])
+    ->prefix('admin')
+    ->name('admin.')
+    ->group(function () {
+        Route::get('announcements', [AnnouncementController::class, 'index'])->name('announcements.index');
+        Route::get('announcements/create', [AnnouncementController::class, 'create'])->name('announcements.create');
+        Route::post('announcements', [AnnouncementController::class, 'store'])->name('announcements.store');
+        Route::get('announcements/{announcement}', [AnnouncementController::class, 'show'])->name('announcements.show');
     });
 
 // ============================================================

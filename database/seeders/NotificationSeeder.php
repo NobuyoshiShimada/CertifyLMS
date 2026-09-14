@@ -81,26 +81,8 @@ class NotificationSeeder extends Seeder
             ];
         }
 
-        // -------------------------------------------------------------
-        // 受講生宛て通知：種別C (運営からのお知らせ - 自己完結型詳細ページ遷移)
-        // -------------------------------------------------------------
-        for ($i = 1; $i <= 5; $i++) {
-            $notifications[] = [
-                'id' => Str::uuid()->toString(),
-                'type' => 'App\Notifications\AdminAnnouncementNotification',
-                'notifiable_type' => get_class($student),
-                'notifiable_id' => $student->id,
-                'data' => json_encode([
-                    'notification_type' => 'admin_announcement',
-                    'title' => "【重要】システムメンテナンスのお知らせ (Vol.{$i})",
-                    'message' => 'サービス向上のための定期メンテナンスの実施スケジュールについてのお知らせです。',
-                    'body' => "受講生の皆様へ\n\nいつもカリキュラムをご利用いただきありがとうございます。\nこちらは運営事務局からの定期アナウンス（第{$i}回）です。\n\nより快適な学習環境を提供するため、サーバーのアップデート作業を行います。\n何卒ご理解とご協力のほどよろしくお願いいたします。",
-                ]),
-                'read_at' => $i % 2 === 0 ? Carbon::now()->subDays($i + 10) : null, // 既読・未読を混在
-                'created_at' => Carbon::now()->subDays($i + 10),
-                'updated_at' => Carbon::now()->subDays($i + 10),
-            ];
-        }
+        // 運営からのお知らせ通知(admin_announcement)は AnnouncementSeeder が実体の
+        // Announcement レコードと紐づけて生成するため、ここでは重複生成しない。
 
         // -------------------------------------------------------------
         // コーチ宛て通知：種別D（Q&A投稿、課題提出）
