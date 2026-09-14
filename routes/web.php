@@ -24,6 +24,7 @@ use App\Http\Controllers\MockExamController;
 use App\Http\Controllers\MockExamQuestionController;
 use App\Http\Controllers\MockExamSessionController;
 use App\Http\Controllers\MockExamSessionMonitorController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PartController;
 use App\Http\Controllers\QaReplyController;
 use App\Http\Controllers\QaThreadController;
@@ -519,4 +520,19 @@ Route::middleware(['auth', 'role:admin'])
 
         // 回答（Reply）のモデレーション削除
         Route::delete('qa-board/{thread}/replies/{reply}', [QaReplyController::class, 'destroyAsAdmin'])->name('qa-board.replies.destroy');
+    });
+
+// ============================================================
+// 通知
+// ============================================================
+
+// 1. 受講生・コーチ 共通ルートグループ（一般表示・受講生画面用）
+Route::middleware(['auth'])
+    ->prefix('notifications')
+    ->name('notifications.')
+    ->group(function () {
+        Route::get('/', [NotificationController::class, 'index'])->name('index');
+        Route::get('/{notification}', [NotificationController::class, 'show'])->name('show');
+        Route::post('/{notification}/read', [NotificationController::class, 'read'])->name('markAsRead');
+        Route::post('/read-all', [NotificationController::class, 'markAllAsRead'])->name('markAllAsRead');
     });

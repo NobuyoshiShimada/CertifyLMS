@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Unit\Policies;
 
 use App\Enums\UserRole;
@@ -33,7 +35,7 @@ class QaReplyPolicyTest extends TestCase
         /** @var QaThread $thread */
         $thread = QaThread::factory()->make();
 
-        $policy = new QaReplyPolicy();
+        $policy = new QaReplyPolicy;
 
         $this->assertTrue($policy->create($student, $thread));
         $this->assertTrue($policy->create($coach, $thread));
@@ -55,7 +57,7 @@ class QaReplyPolicyTest extends TestCase
         /** @var QaReply $reply */
         $reply = QaReply::factory()->create(['user_id' => $author->id]);
 
-        $policy = new QaReplyPolicy();
+        $policy = new QaReplyPolicy;
 
         $this->assertTrue($policy->update($author, $reply));
         $this->assertFalse($policy->update($otherStudent, $reply));
@@ -78,7 +80,7 @@ class QaReplyPolicyTest extends TestCase
         /** @var QaReply $reply */
         $reply = QaReply::factory()->create(['user_id' => $author->id]);
 
-        $policy = new QaReplyPolicy();
+        $policy = new QaReplyPolicy;
 
         $this->assertTrue($policy->delete($author, $reply));
         $this->assertTrue($policy->delete($admin, $reply));

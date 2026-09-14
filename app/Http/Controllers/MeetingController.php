@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\EnrollmentStatus;
 use App\Enums\MeetingStatus;
+use App\Enums\UserStatus;
 use App\Exceptions\MeetingQuota\InsufficientMeetingQuotaException;
 use App\Exceptions\Mentoring\MeetingAlreadyStartedException;
 use App\Exceptions\Mentoring\MeetingNoAvailableCoachException;
@@ -20,6 +21,8 @@ use App\Models\Enrollment;
 use App\Models\Meeting;
 use App\Models\MeetingMemo;
 use App\Models\User;
+use App\Notifications\MeetingCanceledNotification;
+use App\Notifications\MeetingReservedNotification;
 use App\Services\CoachMeetingLoadService;
 use App\Services\MeetingAvailabilityService;
 use App\Services\MeetingQuotaService;
@@ -216,6 +219,17 @@ class MeetingController extends Controller
             return $meeting->fresh();
         });
 
+        $meeting->loadMissing('coach');
+        $coach = $meeting->coach;
+
+        if ($coach && in_array($coach->status, [UserStatus::InProgress, UserStatus::Graduated], true)) {
+            $coach->notify(new MeetingReservedNotification([
+                'title' => '新しい面談予約が入りました',
+                'message' => "{$student->name} さんから面談予約が入りました。",
+                'url' => route('meetings.show', $meeting),
+            ]));
+        }
+
         return redirect()
             ->route('meetings.show', $meeting)
             ->with('success', '面談を予約しました。');
@@ -249,6 +263,17 @@ class MeetingController extends Controller
                 'canceled_at' => now(),
             ]);
         });
+
+        $meeting->refresh()->loadMissing(['coach', 'student']);
+        $recipient = $actor->id === $meeting->student_id ? $meeting->coach : $meeting->student;
+
+        if ($recipient && in_array($recipient->status, [UserStatus::InProgress, UserStatus::Graduated], true)) {
+            $recipient->notify(new MeetingCanceledNotification([
+                'title' => '面談がキャンセルされました',
+                'message' => "{$actor->name} さんが面談をキャンセルしました。",
+                'url' => route('meetings.show', $meeting),
+            ]));
+        }
 
         return redirect()
             ->route('meetings.show', $meeting)

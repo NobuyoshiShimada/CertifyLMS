@@ -5,17 +5,21 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Enums\UserRole;
+use App\Enums\UserStatus;
 use App\Exceptions\Chat\CertificationCoachNotAssignedForChatException;
 use App\Http\Requests\Chat\IndexAsCoachRequest;
 use App\Http\Requests\Chat\IndexRequest;
 use App\Http\Requests\Chat\StoreMessageRequest;
 use App\Models\ChatRoom;
+use App\Notifications\ChatMessageReceivedNotification;
 use App\Services\ChatUnreadCountService;
 use App\UseCases\Chat\ShowAction;
 use App\UseCases\Chat\StoreMessageAction;
 use Illuminate\Contracts\Support\Renderable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 /**
@@ -145,7 +149,24 @@ class ChatRoomController extends Controller
             throw new CertificationCoachNotAssignedForChatException;
         }
 
-        $action($user, $room, $request->validated());
+        $validated = $request->validated();
+        $action($user, $room, $validated);
+
+        $recipients = $room->members()
+            ->where('user_id', '!=', $user->id)
+            ->with('user')
+            ->get()
+            ->pluck('user')
+            ->filter(fn ($recipient) => $recipient !== null
+                && in_array($recipient->status, [UserStatus::InProgress, UserStatus::Graduated], true));
+
+        if ($recipients->isNotEmpty()) {
+            Notification::send($recipients, new ChatMessageReceivedNotification([
+                'title' => '新着メッセージがあります',
+                'message' => "{$user->name} さんからメッセージが届きました: ".Str::limit($validated['body'], 50),
+                'url' => route('chat.show', $room),
+            ]));
+        }
 
         return redirect()
             ->route('chat.show', $room)

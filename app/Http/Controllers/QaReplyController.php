@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Enums\UserStatus;
 use App\Http\Requests\QaBoard\StoreQaReplyRequest;
 use App\Models\QaReply;
 use App\Models\QaThread;
+use App\Models\User;
+use App\Notifications\QuestionRepliedNotification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
@@ -25,7 +28,27 @@ class QaReplyController extends Controller
      */
     public function store(StoreQaReplyRequest $request, QaThread $thread): RedirectResponse
     {
-        QaReply::createWithTransaction($thread, $request->user(), $request->input('body'));
+        $reply = QaReply::createWithTransaction($thread, $request->user(), $request->input('body'));
+
+        $thread->load(['user']);
+
+        $student = $thread->user;
+
+        if (
+            $student
+            && $student->id !== $request->user()->id
+            && in_array($student->status, [UserStatus::InProgress, UserStatus::Graduated], true)
+        ) {
+            $currentUser = $request->user();
+
+            $payload = [
+                'title' => "「{$thread->title}」について回答が届きました",
+                'message' => "コーチの {$currentUser->name} さんがあなたの質問に回答を投稿しました。",
+                'url' => "/qa-board/{$thread->id}",
+            ];
+
+            $student->notify(new QuestionRepliedNotification($payload));
+        }
 
         return back()->with('success', '回答を投稿しました。');
     }
@@ -60,7 +83,8 @@ class QaReplyController extends Controller
 
         $reply->updateWithTransaction($data);
 
-        return redirect()->route('qa-board.show', $thread)->with('success', '回答を更新しました。');
+        return redirect()->route('qa-board.show', ['thread' => $thread->id])
+            ->with('success', '回答を更新しました。');
     }
 
     /**
