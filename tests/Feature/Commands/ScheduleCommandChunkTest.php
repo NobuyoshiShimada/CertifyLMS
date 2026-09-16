@@ -81,4 +81,33 @@ class ScheduleCommandChunkTest extends TestCase
             Meeting::query()->where('status', MeetingStatus::Completed->value)->count(),
         );
     }
+
+    /**
+     * notifications:send-meeting-reminders は処理中に絞り込み条件(送信済みフラグ)自体を更新するため、
+     * 主キーカーソルベースの chunkById() を使っている(chunk() だと後続チャンクを取りこぼす)。
+     * 150 件全件が取りこぼしなく処理される(=送信済みフラグが立つ)ことを検証する。
+     */
+    public function test_send_meeting_reminders_processes_all_records_across_chunks(): void
+    {
+        $coach = User::factory()->coach()->create();
+        $student = User::factory()->student()->create();
+        $enrollment = Enrollment::factory()->learning()->for($student, 'user')->create();
+
+        // UNIQUE(coach_id, scheduled_at) 回避のため、全件を別々の未来時刻(いずれも1時間以内)に置く。
+        $base = now()->copy()->addMinutes(30);
+        for ($i = 0; $i < self::COUNT; $i++) {
+            Meeting::factory()->reserved()
+                ->forCoach($coach)
+                ->forStudent($student)
+                ->forEnrollment($enrollment)
+                ->create(['scheduled_at' => $base->copy()->addSeconds($i)]);
+        }
+
+        $this->artisan('notifications:send-meeting-reminders', ['--window' => 'one_hour_before'])->assertExitCode(0);
+
+        $this->assertSame(
+            self::COUNT,
+            Meeting::query()->whereNotNull('one_hour_before_reminder_sent_at')->count(),
+        );
+    }
 }
