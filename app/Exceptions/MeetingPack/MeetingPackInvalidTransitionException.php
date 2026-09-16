@@ -24,7 +24,7 @@ final class MeetingPackInvalidTransitionException extends ConflictHttpException
 
     public static function forUnarchive(): self
     {
-        return new self('アーカイブ状態の面談パックのみ再公開できます。');
+        return new self('アーカイブ状態の面談パックのみ下書きに戻せます。');
     }
 
     private function __construct(string $message, ?\Throwable $previous = null)

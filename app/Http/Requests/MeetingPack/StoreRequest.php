@@ -29,7 +29,7 @@ class StoreRequest extends FormRequest
             'meeting_count' => ['required', 'integer', 'between:1,100'],
             'price' => ['required', 'integer', 'between:0,1000000'],
             'stripe_price_id' => ['nullable', 'string', 'max:255'],
-            'sort_order' => ['nullable', 'integer', 'between:0,9999'],
+            'sort_order' => ['nullable', 'integer', 'min:0'],
         ];
     }
 

@@ -227,14 +227,14 @@ class MeetingPackControllerTest extends TestCase
         $this->assertSame(MeetingPackStatus::Draft, $plan->fresh()->status);
     }
 
-    public function test_unarchive_transitions_archived_to_published(): void
+    public function test_unarchive_transitions_archived_to_draft(): void
     {
         $plan = MeetingPack::factory()->archived()->create();
 
         $response = $this->actingAs($this->admin())->post(route('admin.meeting-packs.unarchive', $plan));
 
         $response->assertRedirect(route('admin.meeting-packs.show', $plan));
-        $this->assertSame(MeetingPackStatus::Published, $plan->fresh()->status);
+        $this->assertSame(MeetingPackStatus::Draft, $plan->fresh()->status);
     }
 
     public function test_unarchive_rejects_draft_pack(): void
@@ -246,6 +246,24 @@ class MeetingPackControllerTest extends TestCase
         $response->assertRedirect();
         $response->assertSessionHas('error');
         $this->assertSame(MeetingPackStatus::Draft, $plan->fresh()->status);
+    }
+
+    public function test_archived_pack_cannot_be_published_directly_and_must_go_through_draft(): void
+    {
+        $admin = $this->admin();
+        $plan = MeetingPack::factory()->archived()->create();
+
+        // 公開中 → 下書きへの直接遷移は存在しないため、archived からは publish を直接呼べない。
+        $publishResponse = $this->actingAs($admin)->post(route('admin.meeting-packs.publish', $plan));
+        $publishResponse->assertSessionHas('error');
+        $this->assertSame(MeetingPackStatus::Archived, $plan->fresh()->status);
+
+        // unarchive で一度 draft を経由すれば publish できる。
+        $this->actingAs($admin)->post(route('admin.meeting-packs.unarchive', $plan));
+        $this->assertSame(MeetingPackStatus::Draft, $plan->fresh()->status);
+
+        $this->actingAs($admin)->post(route('admin.meeting-packs.publish', $plan));
+        $this->assertSame(MeetingPackStatus::Published, $plan->fresh()->status);
     }
 
     public function test_transition_actions_are_forbidden_for_non_admin(): void

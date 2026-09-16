@@ -11,7 +11,10 @@ use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
 /**
- * 面談パックを再公開する(archived → published)ユースケース。
+ * 面談パックを下書きに戻す(archived → draft)ユースケース。
+ *
+ * 「公開中 → 下書き」への直接遷移は用意せず、誤アーカイブの取り戻しや再販売準備は
+ * 必ずアーカイブを経由させる設計のため、archived からの戻り先は published ではなく draft。
  * アーカイブ以外の状態からの呼出は MeetingPackInvalidTransitionException（409）。
  */
 final class UnarchiveAction
@@ -27,7 +30,7 @@ final class UnarchiveAction
 
         return DB::transaction(function () use ($plan, $admin) {
             $plan->update([
-                'status' => MeetingPackStatus::Published->value,
+                'status' => MeetingPackStatus::Draft->value,
                 'updated_by_user_id' => $admin->id,
             ]);
 
