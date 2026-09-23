@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\AiChatController;
 use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\Auth\OnboardingController;
 use App\Http\Controllers\BrowseController;
@@ -53,6 +54,7 @@ use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\WeakDrillController;
 use App\Http\Controllers\WeakDrillResultController;
+use App\Http\Middleware\EnsureAiChatConfigured;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -561,6 +563,24 @@ Route::middleware(['auth', 'role:student', 'active-learning'])->prefix('meeting-
 // Stripe Webhook(認証なし・CSRF 除外。署名検証のみで正当性を担保)
 // ============================================================
 Route::post('webhooks/stripe', StripeWebhookController::class)->name('webhooks.stripe');
+
+// ============================================================
+// AI 相談(Gemini チャットボット)— 学習中の受講生のみ / 会話はオーナー本人のみ(Policy)
+// 機能 OFF スイッチ(AI_CHAT_ENABLED=false)ではルート自体を登録しない(404、サイドバー / ウィジェットも非表示)
+// ============================================================
+if (config('ai-chat.enabled')) {
+    Route::middleware(['auth', 'role:student', 'active-learning', EnsureAiChatConfigured::class])
+        ->prefix('ai-chat')
+        ->name('ai-chat.')
+        ->group(function () {
+            Route::get('/', [AiChatController::class, 'index'])->name('index');
+            Route::post('conversations', [AiChatController::class, 'store'])->name('conversations.store');
+            Route::get('conversations/{conversation}', [AiChatController::class, 'show'])->name('conversations.show');
+            Route::patch('conversations/{conversation}', [AiChatController::class, 'update'])->name('conversations.update');
+            Route::delete('conversations/{conversation}', [AiChatController::class, 'destroy'])->name('conversations.destroy');
+            Route::post('conversations/{conversation}/messages', [AiChatController::class, 'storeMessage'])->name('conversations.messages.store');
+        });
+}
 
 // ============================================================
 // 開発専用: 共通コンポーネントショーケース(APP_ENV=local のみ表示)

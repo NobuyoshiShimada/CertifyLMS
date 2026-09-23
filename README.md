@@ -146,6 +146,12 @@ sail bin pint --test     # 整形漏れの確認（CI 相当のチェック）
   - 同一オリジン運用(既定)では、`APP_URL` のホスト(例: `localhost:8000`)が `SANCTUM_STATEFUL_DOMAINS` に含まれていれば追加設定は不要です
   - FE を別オリジンに置く場合は、その FE のホスト:ポートを `SANCTUM_STATEFUL_DOMAINS` に、オリジン(スキーム付き)を `CORS_ALLOWED_ORIGINS` に追加してください。あわせて Cookie を共有できるよう `SESSION_DOMAIN` の設定が必要です
   - JS は各ページで最初の API 呼び出し前に 1 度だけ `GET /sanctum/csrf-cookie` を呼び、`XSRF-TOKEN` Cookie の値を `X-XSRF-TOKEN` ヘッダで送ります(CSRF トークンのない POST は `419`)
+- `GEMINI_API_KEY` / `GEMINI_MODEL` / `AI_CHAT_*` — 受講生の AI 相談(Gemini チャットボット)に使用します。API キーは [Google AI Studio](https://aistudio.google.com/) で個人取得し、必ず `.env` の `GEMINI_API_KEY` に設定してください(コードに直接書かないでください)
+  - `GEMINI_API_KEY` が未設定の場合、AI 相談の画面・送信は「AI 相談機能は現在ご利用いただけません」(500)になります(他の機能は動作します)
+  - `AI_CHAT_ENABLED=false` にすると AI 相談のルート・サイドバー項目・フローティングウィジェットをまとめて無効化します(404)
+  - `GEMINI_MODEL` の既定は `gemini-2.5-flash-lite` です。無料枠の上限はモデル・時期で変わるため、利用前に AI Studio で確認してください
+  - `AI_CHAT_DAILY_MESSAGE_LIMIT`(既定 50)は受講生 1 人あたりの 1 日の送信上限、`AI_CHAT_HISTORY_LIMIT`(既定 20)は AI に渡す直近の会話履歴の件数、`AI_CHAT_TITLE_GENERATION_ENABLED` は会話タイトルの AI 自動生成の ON / OFF です
+  - AI 応答の失敗などの運用ログは `storage/logs/ai-chat-*.log` に出力されます
 - `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` / `GOOGLE_REDIRECT_URI` — コーチの Google カレンダー連携(OAuth 2.0)に使用します。値は必ず `.env` で設定し、コードに直接書かないでください。未設定でも面談機能は従来どおり動作します(連携開始だけができません)。設定手順は下記「Google カレンダー連携の動作確認」を参照してください
 - `STRIPE_*` — 追加面談の購入(Stripe Checkout + Webhook)に使用します。キーは必ず `.env` で設定し、コードに直接書かないでください。未設定でも他の機能は動作しますが、購入画面から決済画面へは進めません
   - `STRIPE_SECRET` — API シークレットキー(`sk_test_...`)。Stripe ダッシュボード Developers > API keys で取得します

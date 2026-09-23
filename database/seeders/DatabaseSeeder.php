@@ -35,6 +35,7 @@ class DatabaseSeeder extends Seeder
             QaBoardSeeder::class,
             NotificationSeeder::class,
             AnnouncementSeeder::class,
+            AiChatSeeder::class,
         ]);
     }
 }

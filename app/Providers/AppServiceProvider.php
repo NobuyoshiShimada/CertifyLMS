@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Services\AiChat\AiChatLlmClient;
+use App\Services\AiChat\GeminiLlmClient;
 use App\Services\GoogleCalendar\GoogleApiCalendarGateway;
 use App\Services\GoogleCalendar\GoogleCalendarGateway;
 use App\Services\GoogleCalendar\GoogleCalendarService;
@@ -21,6 +23,13 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        $this->app->bind(AiChatLlmClient::class, fn () => new GeminiLlmClient(
+            config('ai-chat.gemini.api_key'),
+            (string) config('ai-chat.gemini.model'),
+            (string) config('ai-chat.gemini.base_url'),
+            (int) config('ai-chat.gemini.timeout'),
+        ));
+
         $this->app->bind(GoogleCalendarGateway::class, fn () => new GoogleApiCalendarGateway(
             (string) config('services.google.client_id'),
             (string) config('services.google.client_secret'),
