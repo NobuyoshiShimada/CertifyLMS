@@ -24,6 +24,7 @@ use Illuminate\Support\Facades\Hash;
  * - コーチ宛て招待では `meeting_url` を必須項目として保存する(空文字 / 未指定は FormRequest で 422 に弾く前提)
  * - 初期付与の面談回数を MeetingQuotaTransaction(`granted_initial`)として起票する(残数集計の整合性のため `User.max_meetings`
  *   とは別経路で履歴を残す)
+ * - 招待を使用済み(accepted + accepted_at)にし、同じ招待 URL での再オンボーディングを防ぐ
  * - 全 DB 操作は `DB::transaction()` で囲み、自動ログインは commit 後に実施する
  *
  * @see OnboardingController::store()
@@ -90,6 +91,12 @@ final class OnboardAction
             );
 
             $user->forceFill($attrs)->save();
+
+            // 招待を使用済みにする。以降の同一 URL へのアクセスは冒頭のガード(Pending 以外)で 410 になる。
+            $invitation->forceFill([
+                'status' => InvitationStatus::Accepted,
+                'accepted_at' => $now,
+            ])->save();
 
             // 面談クォータは受講生固有の消費対象。コーチは面談を提供する側のため初期付与しない。
             if ($user->role === UserRole::Student && $user->plan->default_meeting_quota > 0) {
