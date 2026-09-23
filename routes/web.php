@@ -46,6 +46,7 @@ use App\Http\Controllers\SectionQuestionController;
 use App\Http\Controllers\SectionQuizController;
 use App\Http\Controllers\SectionQuizResultController;
 use App\Http\Controllers\Settings\AvailabilityController as SettingsAvailabilityController;
+use App\Http\Controllers\Settings\GoogleCalendarController as SettingsGoogleCalendarController;
 use App\Http\Controllers\Settings\ProfileController as SettingsProfileController;
 use App\Http\Controllers\Settings\SettingsDefaultEnrollmentController;
 use App\Http\Controllers\StripeWebhookController;
@@ -517,6 +518,18 @@ Route::middleware(['auth', 'role:coach'])->prefix('coach')->name('coach.')->grou
     Route::get('meetings', [MeetingController::class, 'indexAsCoach'])->name('meetings.index');
     Route::put('meetings/{meeting}/memo', [MeetingController::class, 'upsertMemo'])->name('meetings.memo');
 });
+
+// ============================================================
+// コーチ専用ルート — Google カレンダー連携(開始 / コールバック / 解除)
+// ============================================================
+Route::middleware(['auth', 'role:coach'])
+    ->prefix('settings/google-calendar')
+    ->name('settings.google-calendar.')
+    ->group(function () {
+        Route::get('connect', [SettingsGoogleCalendarController::class, 'redirect'])->name('redirect');
+        Route::get('callback', [SettingsGoogleCalendarController::class, 'callback'])->name('callback');
+        Route::delete('/', [SettingsGoogleCalendarController::class, 'destroy'])->name('destroy');
+    });
 
 // ============================================================
 // コーチ専用ルート — 面談可能時間枠の編集

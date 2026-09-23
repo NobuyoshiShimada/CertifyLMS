@@ -24,6 +24,7 @@ use App\Models\User;
 use App\Notifications\MeetingCanceledNotification;
 use App\Notifications\MeetingReservedNotification;
 use App\Services\CoachMeetingLoadService;
+use App\Services\GoogleCalendar\GoogleCalendarService;
 use App\Services\MeetingAvailabilityService;
 use App\Services\MeetingQuotaService;
 use App\UseCases\MeetingQuota\ConsumeQuotaAction;
@@ -170,6 +171,7 @@ class MeetingController extends Controller
         CoachMeetingLoadService $coachLoadService,
         MeetingQuotaService $quotaService,
         ConsumeQuotaAction $consumeAction,
+        GoogleCalendarService $googleCalendar,
     ): RedirectResponse {
         $scheduledAt = Carbon::parse($request->validated('scheduled_at'));
         $topic = $request->validated('topic');
@@ -184,6 +186,7 @@ class MeetingController extends Controller
             $coachLoadService,
             $quotaService,
             $consumeAction,
+            $googleCalendar,
         ) {
             if ($quotaService->remaining($student) < 1) {
                 throw new InsufficientMeetingQuotaException;
@@ -191,7 +194,7 @@ class MeetingController extends Controller
 
             $availabilityService->validateSlot($enrollment->certification, $scheduledAt);
 
-            $candidates = $this->findAvailableCoaches($enrollment->certification, $scheduledAt);
+            $candidates = $this->findAvailableCoaches($enrollment->certification, $scheduledAt, $googleCalendar);
             if ($candidates->isEmpty()) {
                 throw new MeetingNoAvailableCoachException;
             }
@@ -230,6 +233,9 @@ class MeetingController extends Controller
             ]));
         }
 
+        // Google カレンダーへの予定登録はコミット後に行う(失敗しても予約・面談回数消費・通知は成立したまま)
+        $googleCalendar->createEventFor($meeting);
+
         return redirect()
             ->route('meetings.show', $meeting)
             ->with('success', '面談を予約しました。');
@@ -242,6 +248,7 @@ class MeetingController extends Controller
     public function cancel(
         Meeting $meeting,
         RefundQuotaAction $refundAction,
+        GoogleCalendarService $googleCalendar,
     ): RedirectResponse {
         $this->authorize('cancel', $meeting);
 
@@ -269,6 +276,10 @@ class MeetingController extends Controller
         });
 
         $meeting->refresh()->loadMissing(['coach', 'student']);
+
+        // Google カレンダーの予定削除はコミット後に行う(失敗してもキャンセル・面談回数返却は成立したまま)
+        $googleCalendar->deleteEventFor($meeting);
+
         $recipient = $actor->id === $meeting->student_id ? $meeting->coach : $meeting->student;
 
         if ($recipient && in_array($recipient->status, [UserStatus::InProgress, UserStatus::Graduated], true)) {
@@ -334,7 +345,7 @@ class MeetingController extends Controller
      *
      * @return Collection<int, User>
      */
-    private function findAvailableCoaches(Certification $certification, Carbon $scheduledAt): Collection
+    private function findAvailableCoaches(Certification $certification, Carbon $scheduledAt, GoogleCalendarService $googleCalendar): Collection
     {
         $time = $scheduledAt->format('H:i:s');
 
@@ -349,6 +360,10 @@ class MeetingController extends Controller
                 $q->where('scheduled_at', $scheduledAt)
                     ->whereIn('status', [MeetingStatus::Reserved->value, MeetingStatus::Completed->value]);
             })
-            ->get();
+            ->with('googleCredential')
+            ->get()
+            // Google カレンダー連携済コーチは予定と重なる時刻を候補から外す(未連携 / 取得失敗は予定なし扱い)
+            ->reject(fn (User $coach) => $googleCalendar->isBusyAt($coach, $scheduledAt))
+            ->values();
     }
 }
