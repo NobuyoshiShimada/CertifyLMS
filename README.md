@@ -160,6 +160,16 @@ sail bin pint --test     # 整形漏れの確認（CI 相当のチェック）
 
 新しい環境変数やセットアップ手順を追加した場合は、`.env.example` と本 README に追記し、チームの誰でも環境を再現できる状態を保ってください。
 
+## 修了証 PDF
+
+受講生が「修了証を受け取る」を実行すると、修了証の発行と同じ処理の中で日本語の修了証 PDF(A4 横向き)を生成し、`storage/app/private/certificates/` に保存します。追加の環境変数は不要です。
+
+- PDF 生成には `mpdf/mpdf`(`composer install` で導入済み)を使用します。日本語は mpdf 同梱の CJK フォント(Sun-ExtA)で描画されるため、フォントの追加インストールは不要です
+- mpdf の一時ファイルは `storage/framework/cache/mpdf/` に作成されます(`storage/` が書き込み可能であれば設定不要)
+- 保存先は Web から直接アクセスできない `private` ディスク(`storage/app/private`)です。`public` ディスクや `storage:link` の公開領域には置かず、ダウンロードは `GET /certificates/{certificate}/download`(本人 / 担当コーチ / 管理者のみ、`certificate-{修了証 ID}.pdf` の添付形式)経由に限定しています
+- PDF の生成に失敗した場合は、修了証の発行と受講登録の修了への遷移を巻き戻し、書きかけのファイルも削除します
+- 初期データ(`sail artisan db:seed`)では、投入された修了証すべての PDF 実体を `CertificatePdfSeeder` が生成します
+
 ## Google カレンダー連携の動作確認
 
 コーチが面談設定タブから自分の Google アカウントを連携すると、Google カレンダー(プライマリカレンダー)に予定がある時刻は受講生の予約画面の空き枠から外れ、面談の予約成立 / キャンセルに合わせて予定が登録 / 削除されます。Google との通信に失敗した場合は「連携なし」として扱い、面談の予約・キャンセル・空き枠の表示は止まりません。
