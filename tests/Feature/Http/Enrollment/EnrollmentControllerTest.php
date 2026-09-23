@@ -11,6 +11,7 @@ use App\Models\MockExam;
 use App\Models\MockExamSession;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 /**
@@ -238,6 +239,8 @@ class EnrollmentControllerTest extends TestCase
 
     public function test_receive_certificate_succeeds_when_eligible(): void
     {
+        // 修了証受領で PDF を生成・保存するため、実ファイルを書き込まないよう保管領域を差し替える
+        Storage::fake('private');
         $student = User::factory()->student()->inProgress()->create();
         $certification = Certification::factory()->published()->create();
         $enrollment = Enrollment::factory()->for($student)->for($certification)->learning()->create();

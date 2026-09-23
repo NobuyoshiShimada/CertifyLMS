@@ -6,6 +6,8 @@ namespace App\Providers;
 
 use App\Services\AiChat\AiChatLlmClient;
 use App\Services\AiChat\GeminiLlmClient;
+use App\Services\Certificate\CertificatePdfRenderer;
+use App\Services\Certificate\MpdfCertificatePdfRenderer;
 use App\Services\GoogleCalendar\GoogleApiCalendarGateway;
 use App\Services\GoogleCalendar\GoogleCalendarGateway;
 use App\Services\GoogleCalendar\GoogleCalendarService;
@@ -23,6 +25,7 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        $this->app->bind(CertificatePdfRenderer::class, MpdfCertificatePdfRenderer::class);
         $this->app->bind(AiChatLlmClient::class, fn () => new GeminiLlmClient(
             config('ai-chat.gemini.api_key'),
             (string) config('ai-chat.gemini.model'),

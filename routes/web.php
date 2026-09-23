@@ -6,6 +6,7 @@ use App\Http\Controllers\AiChatController;
 use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\Auth\OnboardingController;
 use App\Http\Controllers\BrowseController;
+use App\Http\Controllers\CertificateController;
 use App\Http\Controllers\CertificationCatalogController;
 use App\Http\Controllers\CertificationCategoryController;
 use App\Http\Controllers\CertificationCoachAssignmentController;
@@ -87,6 +88,10 @@ Route::middleware('auth')->group(function () {
     Route::get('enrollments/{enrollment}', [EnrollmentController::class, 'show'])
         ->withTrashed()
         ->name('enrollments.show');
+
+    // 修了証 PDF ダウンロード(本人 / 担当コーチ / 管理者。学習中ガードは掛けない: 修了後も本人は DL できる)
+    Route::get('certificates/{certificate}/download', [CertificateController::class, 'download'])
+        ->name('certificates.download');
 
     // コーチメモ(担当コーチ / 管理者のみ。受講生は閲覧含め EnrollmentNotePolicy で 403)
     Route::post('enrollments/{enrollment}/notes', [EnrollmentNoteController::class, 'store'])
