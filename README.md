@@ -142,6 +142,10 @@ sail bin pint --test     # 整形漏れの確認（CI 相当のチェック）
 
 - `PUSHER_*` — チャットのリアルタイム配信に使用します。有効にする場合は Pusher のキーを取得して設定し、`BROADCAST_DRIVER=pusher` に変更してください。未設定（既定の `BROADCAST_DRIVER=log`）でもメッセージの送受信自体は動作し、相手画面へのリアルタイム反映のみ行われません
 
+- `SANCTUM_STATEFUL_DOMAINS` / `CORS_ALLOWED_ORIGINS` — 通知ポップオーバーが使う通知 JSON API(`/api/v1/notifications`)の Sanctum SPA Cookie 認証に使用します
+  - 同一オリジン運用(既定)では、`APP_URL` のホスト(例: `localhost:8000`)が `SANCTUM_STATEFUL_DOMAINS` に含まれていれば追加設定は不要です
+  - FE を別オリジンに置く場合は、その FE のホスト:ポートを `SANCTUM_STATEFUL_DOMAINS` に、オリジン(スキーム付き)を `CORS_ALLOWED_ORIGINS` に追加してください。あわせて Cookie を共有できるよう `SESSION_DOMAIN` の設定が必要です
+  - JS は各ページで最初の API 呼び出し前に 1 度だけ `GET /sanctum/csrf-cookie` を呼び、`XSRF-TOKEN` Cookie の値を `X-XSRF-TOKEN` ヘッダで送ります(CSRF トークンのない POST は `419`)
 - `STRIPE_*` — 追加面談の購入(Stripe Checkout + Webhook)に使用します。キーは必ず `.env` で設定し、コードに直接書かないでください。未設定でも他の機能は動作しますが、購入画面から決済画面へは進めません
   - `STRIPE_SECRET` — API シークレットキー(`sk_test_...`)。Stripe ダッシュボード Developers > API keys で取得します
   - `STRIPE_KEY` — 公開キー(`pk_test_...`)。同じ画面で取得します(Checkout ベースのため現状はサーバ側で未使用)
