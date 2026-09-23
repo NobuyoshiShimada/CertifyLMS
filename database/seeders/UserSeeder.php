@@ -8,6 +8,7 @@ use App\Enums\UserStatus;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * 開発用シードユーザー。
@@ -35,6 +36,7 @@ class UserSeeder extends Seeder
     {
         $this->createFixedAccounts();
         $this->createDemoStudents();
+        $this->seedAvatars();
     }
 
     /**
@@ -154,5 +156,35 @@ class UserSeeder extends Seeder
                 'deleted_at' => now()->subDays(fake()->numberBetween(1, 60)),
                 'email' => fn () => 'withdrawn_'.now()->timestamp.'_'.fake()->unique()->randomNumber(5).'@certify-lms.test',
             ]);
+    }
+
+    /**
+     * アバター設定済 / 未設定を混在させる(アイコン差し替え・削除・イニシャル表示の実機確認用)。
+     * 固定の coach@ / student@ のみ画像を持たせ、admin@ / coach2@ / student-noquota@ / demo は未設定のまま。
+     */
+    private function seedAvatars(): void
+    {
+        $targets = [
+            'coach@certify-lms.test' => [37, 99, 235],
+            'student@certify-lms.test' => [22, 163, 74],
+        ];
+
+        foreach ($targets as $email => [$r, $g, $b]) {
+            $user = User::query()->where('email', $email)->first();
+            if ($user === null) {
+                continue;
+            }
+
+            $image = imagecreatetruecolor(128, 128);
+            imagefill($image, 0, 0, imagecolorallocate($image, $r, $g, $b));
+            ob_start();
+            imagepng($image);
+            $png = (string) ob_get_clean();
+            imagedestroy($image);
+
+            $path = 'avatars/seed-'.$user->id.'.png';
+            Storage::disk('public')->put($path, $png);
+            $user->update(['avatar_url' => Storage::disk('public')->url($path)]);
+        }
     }
 }
