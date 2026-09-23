@@ -9,6 +9,7 @@ use App\Enums\MeetingStatus;
 use App\Models\Meeting;
 use App\UseCases\Meeting\SendMeetingReminderAction;
 use Illuminate\Console\Command;
+use Illuminate\Support\Carbon;
 
 /**
  * 予約済み面談に対して、前日 / 開始1時間前のリマインダー通知(アプリ内 + メール)を配信する Schedule Command。
@@ -57,7 +58,7 @@ class SendMeetingRemindersCommand extends Command
     }
 
     /**
-     * @return array{0: \Illuminate\Support\Carbon, 1: \Illuminate\Support\Carbon}
+     * @return array{0: Carbon, 1: Carbon}
      */
     private function resolveRange(MeetingReminderWindow $window): array
     {

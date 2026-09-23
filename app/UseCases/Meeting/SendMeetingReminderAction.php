@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\UseCases\Meeting;
 
+use App\Console\Commands\Mentoring\SendMeetingRemindersCommand;
 use App\Enums\MeetingReminderWindow;
 use App\Enums\MeetingStatus;
 use App\Enums\UserStatus;
@@ -18,7 +19,7 @@ use Illuminate\Support\Facades\DB;
  * トランザクション内で「まだ reserved か」「まだ当該 window の送信済みフラグが立っていないか」を
  * 再確認してから UPDATE することで、多重起動・並行実行でも二重配信されないことを保証する(冪等)。
  *
- * @see \App\Console\Commands\Mentoring\SendMeetingRemindersCommand
+ * @see SendMeetingRemindersCommand
  */
 final class SendMeetingReminderAction
 {
