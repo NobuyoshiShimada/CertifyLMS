@@ -142,4 +142,31 @@ sail bin pint --test     # 整形漏れの確認（CI 相当のチェック）
 
 - `PUSHER_*` — チャットのリアルタイム配信に使用します。有効にする場合は Pusher のキーを取得して設定し、`BROADCAST_DRIVER=pusher` に変更してください。未設定（既定の `BROADCAST_DRIVER=log`）でもメッセージの送受信自体は動作し、相手画面へのリアルタイム反映のみ行われません
 
+- `STRIPE_*` — 追加面談の購入(Stripe Checkout + Webhook)に使用します。キーは必ず `.env` で設定し、コードに直接書かないでください。未設定でも他の機能は動作しますが、購入画面から決済画面へは進めません
+  - `STRIPE_SECRET` — API シークレットキー(`sk_test_...`)。Stripe ダッシュボード Developers > API keys で取得します
+  - `STRIPE_KEY` — 公開キー(`pk_test_...`)。同じ画面で取得します(Checkout ベースのため現状はサーバ側で未使用)
+  - `STRIPE_WEBHOOK_SECRET` — Webhook 署名検証用シークレット(`whsec_...`)。ローカルでは下記の Stripe CLI が表示する値を使います。本番は Developers > Webhooks でエンドポイントを登録して取得します
+
 新しい環境変数やセットアップ手順を追加した場合は、`.env.example` と本 README に追記し、チームの誰でも環境を再現できる状態を保ってください。
+
+## 追加面談購入(Stripe)の動作確認
+
+決済結果は Stripe からの Webhook(`POST /webhooks/stripe`)で受け取り、署名検証を通ったイベントだけを反映します。残面談回数の加算は決済完了画面の表示時ではなく、Webhook(`checkout.session.completed`)の受信時に行われます。
+
+1. `.env` にテストモードの `STRIPE_SECRET` を設定します
+2. [Stripe CLI](https://docs.stripe.com/stripe-cli) をインストールしてログインします
+
+   ```bash
+   stripe login
+   ```
+
+3. Webhook をローカルへ転送します。表示される `whsec_...` を `.env` の `STRIPE_WEBHOOK_SECRET` に設定し、`sail artisan config:clear` を実行します
+
+   ```bash
+   stripe listen --forward-to localhost:8000/webhooks/stripe
+   ```
+
+4. `student@certify-lms.test` でログインし、「追加面談の購入」からパックを選んで、テストカード `4242 4242 4242 4242`(有効期限は未来の任意の日付 / CVC は任意)で決済します
+5. `stripe listen` のターミナルに `checkout.session.completed` の転送結果(`200`)が表示され、ダッシュボード / 面談予約画面 / 面談回数履歴の残数が購入回数分増えていることを確認します
+
+決済画面で「戻る」を押して中断した場合は、ダッシュボードへ戻り、購入記録は「決済待ち」のまま残ります(Stripe のセッション期限切れイベント受信時に「決済失敗」になります)。署名が正しくない通知は `400` で拒否され、購入記録や残数は変更されません。

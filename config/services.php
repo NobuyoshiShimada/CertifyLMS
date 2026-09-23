@@ -33,4 +33,12 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    // 追加面談購入(Stripe Checkout + Webhook)。キーは必ず .env 経由で設定する。
+    'stripe' => [
+        'key' => env('STRIPE_KEY'),
+        'secret' => env('STRIPE_SECRET'),
+        'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
+        'currency' => 'jpy',
+    ],
+
 ];
