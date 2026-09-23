@@ -71,6 +71,12 @@ sail artisan migrate:fresh --seed
 
 `storage:link` は教材画像・プロフィール画像の配信に必要です。`migrate:fresh --seed` でテーブル作成とデモデータ投入が行われます（いつでも再実行してデータを初期状態に戻せます）。
 
+通知・メールはキュー経由で送信されるため、動作確認時は別ターミナルで worker を起動しておいてください（詳細は下記「通知・メール配信（キュー）」）。
+
+```bash
+sail artisan queue:work
+```
+
 ### 7. フロントエンドのビルド
 
 ```bash
@@ -153,12 +159,38 @@ sail bin pint --test     # 整形漏れの確認（CI 相当のチェック）
   - `AI_CHAT_DAILY_MESSAGE_LIMIT`(既定 50)は受講生 1 人あたりの 1 日の送信上限、`AI_CHAT_HISTORY_LIMIT`(既定 20)は AI に渡す直近の会話履歴の件数、`AI_CHAT_TITLE_GENERATION_ENABLED` は会話タイトルの AI 自動生成の ON / OFF です
   - AI 応答の失敗などの運用ログは `storage/logs/ai-chat-*.log` に出力されます
 - `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` / `GOOGLE_REDIRECT_URI` — コーチの Google カレンダー連携(OAuth 2.0)に使用します。値は必ず `.env` で設定し、コードに直接書かないでください。未設定でも面談機能は従来どおり動作します(連携開始だけができません)。設定手順は下記「Google カレンダー連携の動作確認」を参照してください
+- `QUEUE_CONNECTION` — 通知・メール送信のキュー接続です。既定は `database`(`jobs` テーブル)で、外部ミドルウェアは不要です。`sync` にすると従来どおり発火元リクエスト内で同期送信します(worker 不要)
 - `STRIPE_*` — 追加面談の購入(Stripe Checkout + Webhook)に使用します。キーは必ず `.env` で設定し、コードに直接書かないでください。未設定でも他の機能は動作しますが、購入画面から決済画面へは進めません
   - `STRIPE_SECRET` — API シークレットキー(`sk_test_...`)。Stripe ダッシュボード Developers > API keys で取得します
   - `STRIPE_KEY` — 公開キー(`pk_test_...`)。同じ画面で取得します(Checkout ベースのため現状はサーバ側で未使用)
   - `STRIPE_WEBHOOK_SECRET` — Webhook 署名検証用シークレット(`whsec_...`)。ローカルでは下記の Stripe CLI が表示する値を使います。本番は Developers > Webhooks でエンドポイントを登録して取得します
 
 新しい環境変数やセットアップ手順を追加した場合は、`.env.example` と本 README に追記し、チームの誰でも環境を再現できる状態を保ってください。
+
+## 通知・メール配信（キュー）
+
+通知(チャット / Q&A 返信 / 面談の予約・キャンセル・リマインダー / 管理者お知らせ)と招待メールは、発火元のリクエストでは `jobs` テーブルへジョブを積むだけで即応答し、実際の送信は worker が行います。トランザクション内で発火した送信は commit 後にだけ積まれます(ロールバック時は送信されません)。
+
+```bash
+# worker の起動(常駐。停止は Ctrl+C)
+sail artisan queue:work
+
+# 開発中にコード変更を即反映したい場合(ジョブごとにコードを読み直す)
+sail artisan queue:listen
+```
+
+- worker を起動していない間、ジョブは `jobs` テーブルに積まれたまま処理されません(起動すると順次送信されます)
+- 送信が一時的に失敗した場合、最大 3 回まで 10 秒 → 60 秒と待機を伸ばしながら自動リトライします
+- 上限を超えて失敗した送信は `failed_jobs` テーブルに記録されます。確認・再投入は次のコマンドで行います
+
+```bash
+sail artisan queue:failed          # 失敗ジョブの一覧
+sail artisan queue:retry all       # 失敗ジョブをすべて再投入(個別は queue:retry <ID>)
+sail artisan queue:flush           # 失敗ジョブをすべて削除
+```
+
+- コードを変更したら `sail artisan queue:restart` で常駐中の worker を再起動してください(`queue:work` は起動時のコードを保持し続けます)
+- 自動テスト(`phpunit.xml`)は `QUEUE_CONNECTION=sync` で実行されます
 
 ## 修了証 PDF
 

@@ -4,19 +4,15 @@ declare(strict_types=1);
 
 namespace App\Notifications;
 
-use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
-use Illuminate\Notifications\Notification;
 
 /**
  * Class MeetingReminderNotification
  *
  * 業務イベント：予約済み面談の前日 / 開始1時間前を、当事者(受講生・コーチ)へ通知するクラス。
  */
-class MeetingReminderNotification extends Notification
+class MeetingReminderNotification extends BaseNotification
 {
-    use Queueable;
-
     /**
      * @var array{title: string, message: string, url: string}
      */

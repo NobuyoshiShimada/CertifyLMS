@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace App\Notifications;
 
-use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
-use Illuminate\Notifications\Notification;
 
 /**
  * Class NewQuestionPostedNotification
@@ -14,10 +12,8 @@ use Illuminate\Notifications\Notification;
  * 業務イベント：受講生による新規質問投稿を、当事者であるコーチへ通知するクラス。
  * アプリ内データベースへの記録と、即時メール配信を同時に制御します。
  */
-class NewQuestionPostedNotification extends Notification
+class NewQuestionPostedNotification extends BaseNotification
 {
-    use Queueable;
-
     protected array $questionData;
 
     /**

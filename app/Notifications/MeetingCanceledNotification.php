@@ -4,19 +4,15 @@ declare(strict_types=1);
 
 namespace App\Notifications;
 
-use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
-use Illuminate\Notifications\Notification;
 
 /**
  * Class MeetingCanceledNotification
  *
  * 業務イベント：面談予約のキャンセルを、キャンセルを行った本人以外の当事者へ通知するクラス。
  */
-class MeetingCanceledNotification extends Notification
+class MeetingCanceledNotification extends BaseNotification
 {
-    use Queueable;
-
     /**
      * @var array{title: string, message: string, url: string}
      */

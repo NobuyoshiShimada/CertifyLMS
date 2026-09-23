@@ -4,19 +4,15 @@ declare(strict_types=1);
 
 namespace App\Notifications;
 
-use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
-use Illuminate\Notifications\Notification;
 
 /**
  * Class QuestionRepliedNotification
  *
  * 業務イベント：コーチによる質問への回答投稿を、当事者である受講生（質問投稿者）のデータベース通知基盤へ保存するクラス。
  */
-class QuestionRepliedNotification extends Notification
+class QuestionRepliedNotification extends BaseNotification
 {
-    use Queueable;
-
     /**
      * 通知に必要な動的データ
      *
