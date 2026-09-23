@@ -30,6 +30,8 @@ class FakeGoogleCalendarGateway implements GoogleCalendarGateway
 
     public bool $failRefresh = false;
 
+    public bool $failExchange = false;
+
     /** 次の API 呼び出しで 401(アクセストークン失効)を 1 度だけ返す */
     public bool $expireOnce = false;
 
@@ -47,6 +49,10 @@ class FakeGoogleCalendarGateway implements GoogleCalendarGateway
     public function exchangeAuthorizationCode(string $code): GoogleToken
     {
         $this->calls[] = ['method' => 'exchange'];
+
+        if ($this->failExchange) {
+            throw new RuntimeException('exchange failed');
+        }
 
         return $this->exchangeResult ?? new GoogleToken('exchanged-access', 'exchanged-refresh', now()->addHour());
     }

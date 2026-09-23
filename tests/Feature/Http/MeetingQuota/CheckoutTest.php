@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Services\Stripe\CheckoutSession;
 use App\Services\Stripe\CheckoutSessionGateway;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Group;
 use Tests\TestCase;
 
 /**
@@ -18,6 +19,7 @@ use Tests\TestCase;
  *
  * Stripe Checkout Session の作成は偽のゲートウェイに差し替え、実 API には接続しない。
  */
+#[Group('external')]
 class CheckoutTest extends TestCase
 {
     use RefreshDatabase;

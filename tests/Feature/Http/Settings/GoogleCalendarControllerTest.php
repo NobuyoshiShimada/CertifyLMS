@@ -10,12 +10,14 @@ use App\Models\User;
 use App\Services\GoogleCalendar\GoogleCalendarGateway;
 use App\Services\GoogleCalendar\GoogleToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Group;
 use Tests\Fakes\FakeGoogleCalendarGateway;
 use Tests\TestCase;
 
 /**
  * Google カレンダー連携(開始 / コールバック / 解除)のアクセス制御・state 照合・連携状態表示を検証する機能テスト。
  */
+#[Group('external')]
 class GoogleCalendarControllerTest extends TestCase
 {
     use RefreshDatabase;
@@ -125,6 +127,18 @@ class GoogleCalendarControllerTest extends TestCase
         $this->actingAs($this->coach)
             ->get(route('settings.google-calendar.callback', ['code' => 'auth-code', 'state' => $this->stateFor($this->coach->id)]))
             ->assertStatus(400);
+
+        $this->assertDatabaseCount('google_credentials', 0);
+    }
+
+    public function test_callback_when_token_exchange_fails_redirects_with_error_without_storing(): void
+    {
+        $this->gateway->failExchange = true;
+
+        $this->actingAs($this->coach)
+            ->get(route('settings.google-calendar.callback', ['code' => 'expired-code', 'state' => $this->stateFor($this->coach->id)]))
+            ->assertRedirect('/settings/availability')
+            ->assertSessionHas('error', 'Google カレンダーとの連携に失敗しました。時間をおいて再度お試しください。');
 
         $this->assertDatabaseCount('google_credentials', 0);
     }

@@ -12,12 +12,14 @@ use App\Models\Certification;
 use App\Models\Enrollment;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Testing\TestResponse;
+use PHPUnit\Framework\Attributes\Group;
 use Tests\TestCase;
 
 /**
  * AI 相談のメッセージ送受信(文脈の自動付与 / 会話履歴 / 失敗時の保存と 502 / 日次上限 / タイトル自動生成 /
  * API キー未設定)を検証する機能テスト。Gemini は偽の LLM クライアントに差し替える。
  */
+#[Group('external')]
 class AiChatMessageTest extends TestCase
 {
     use AiChatTestHelpers;

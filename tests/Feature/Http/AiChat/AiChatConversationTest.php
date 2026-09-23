@@ -8,11 +8,13 @@ use App\Models\AiChatConversation;
 use App\Models\AiChatMessage;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Group;
 use Tests\TestCase;
 
 /**
  * AI 相談の会話(作成 / 再開 / 表示 / タイトル編集 / 削除)とアクセス制御を検証する機能テスト。
  */
+#[Group('external')]
 class AiChatConversationTest extends TestCase
 {
     use AiChatTestHelpers;

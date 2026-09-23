@@ -14,13 +14,16 @@ use App\Models\User;
 use App\Services\MeetingQuotaService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Testing\TestResponse;
+use PHPUnit\Framework\Attributes\Group;
+use Tests\Support\StripeWebhookSigner;
 use Tests\TestCase;
 
 /**
  * Stripe Webhook 受信(POST /webhooks/stripe)の署名検証・状態遷移・残数加算・冪等性を検証する機能テスト。
  *
- * 実 API には接続せず、既知のシークレットで Stripe と同じ形式の署名ヘッダを生成して送る。
+ * 実 API には接続せず、既知のシークレットで Stripe と同じ形式の署名ヘッダを生成して送る(StripeWebhookSigner)。
  */
+#[Group('external')]
 class StripeWebhookTest extends TestCase
 {
     use RefreshDatabase;
@@ -63,16 +66,18 @@ class StripeWebhookTest extends TestCase
         ]);
     }
 
-    private function send(string $payload, ?string $secret = self::SECRET): TestResponse
+    private function send(string $payload, ?string $secret = self::SECRET, ?int $timestamp = null): TestResponse
     {
-        $timestamp = time();
-        $signature = hash_hmac('sha256', "{$timestamp}.{$payload}", (string) $secret);
+        return $this->sendWithSignature($payload, StripeWebhookSigner::sign($payload, (string) $secret, $timestamp));
+    }
 
+    private function sendWithSignature(string $payload, string $signatureHeader): TestResponse
+    {
         return $this->call(
             'POST',
             route('webhooks.stripe'),
             server: [
-                'HTTP_STRIPE_SIGNATURE' => "t={$timestamp},v1={$signature}",
+                'HTTP_STRIPE_SIGNATURE' => $signatureHeader,
                 'CONTENT_TYPE' => 'application/json',
                 'HTTP_ACCEPT' => 'application/json',
             ],
@@ -192,6 +197,53 @@ class StripeWebhookTest extends TestCase
 
         $this->assertSame(PaymentStatus::Pending, $this->payment->fresh()->status);
         $this->assertSame($before, $this->remaining());
+    }
+
+    public function test_identical_event_redelivered_is_applied_only_once(): void
+    {
+        // Stripe の再送と同じく、同じイベント(同じ本文)が 2 回届く
+        $payload = $this->payload('checkout.session.completed');
+        $before = $this->remaining();
+
+        $this->send($payload)->assertOk();
+        $this->send($payload)->assertOk();
+
+        $this->assertSame($before + 3, $this->remaining());
+        $this->assertSame(1, MeetingQuotaTransaction::query()->where('related_payment_id', $this->payment->id)->count());
+        $this->assertSame(PaymentStatus::Succeeded, $this->payment->fresh()->status);
+    }
+
+    public function test_tampered_payload_after_signing_returns_400(): void
+    {
+        $payload = $this->payload('checkout.session.completed');
+        $signature = StripeWebhookSigner::sign($payload, self::SECRET);
+        $tampered = str_replace('"paid"', '"unpaid"', $payload);
+
+        $this->sendWithSignature($tampered, $signature)->assertStatus(400);
+
+        $this->assertSame(PaymentStatus::Pending, $this->payment->fresh()->status);
+    }
+
+    public function test_signature_older_than_tolerance_is_rejected_as_replay(): void
+    {
+        // Stripe SDK の既定許容は 300 秒。それを超えた署名はリプレイとして拒否される
+        $this->send($this->payload('checkout.session.completed'), timestamp: time() - 301)->assertStatus(400);
+
+        $this->assertSame(PaymentStatus::Pending, $this->payment->fresh()->status);
+    }
+
+    public function test_signature_within_tolerance_is_accepted(): void
+    {
+        $this->send($this->payload('checkout.session.completed'), timestamp: time() - 290)->assertOk();
+
+        $this->assertSame(PaymentStatus::Succeeded, $this->payment->fresh()->status);
+    }
+
+    public function test_malformed_signature_header_returns_400(): void
+    {
+        $this->sendWithSignature($this->payload('checkout.session.completed'), 'not-a-stripe-signature')->assertStatus(400);
+
+        $this->assertSame(PaymentStatus::Pending, $this->payment->fresh()->status);
     }
 
     public function test_missing_signature_header_returns_400(): void
