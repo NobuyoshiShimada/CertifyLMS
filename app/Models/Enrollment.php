@@ -136,6 +136,16 @@ class Enrollment extends Model
     }
 
     /**
+     * 個人目標。一覧表示用に EnrollmentGoal::scopeDisplayOrder の順で返す。
+     *
+     * @return HasMany<EnrollmentGoal, $this>
+     */
+    public function goals(): HasMany
+    {
+        return $this->hasMany(EnrollmentGoal::class)->displayOrder();
+    }
+
+    /**
      * @return HasOne<LearningHourTarget, $this>
      */
     public function learningHourTarget(): HasOne
