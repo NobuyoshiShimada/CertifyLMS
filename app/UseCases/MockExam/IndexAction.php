@@ -15,6 +15,7 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
  * - admin: 全資格配下の MockExam
  * - coach: 担当資格(certification.coaches)配下の MockExam のみ
  * フィルタ: keyword(部分一致) / certification_id / is_published
+ * 所属資格 / 作成者 / 更新者は Eager Loading、問題数は withCount で一括取得する。
  */
 final class IndexAction
 {
@@ -47,6 +48,10 @@ final class IndexAction
         }
 
         return $query
+            // 各行の関連情報は模試集合に対して一括取得する(行ごとの遅延ロードで件数に比例してクエリが増えるのを防ぐ)。
+            // 問題数は子レコードを読み込まず件数だけを集計する(mock_exam_questions_count)
+            ->with(['certification', 'createdBy', 'updatedBy'])
+            ->withCount('mockExamQuestions')
             ->orderBy('certification_id')
             ->orderBy('order')
             ->orderByDesc('updated_at')
