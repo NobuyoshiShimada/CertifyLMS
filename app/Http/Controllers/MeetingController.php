@@ -247,7 +247,7 @@ class MeetingController extends Controller
 
         $actor = auth()->user();
 
-        DB::transaction(function () use ($meeting, $actor) {
+        DB::transaction(function () use ($meeting, $actor, $refundAction) {
             $locked = Meeting::query()->whereKey($meeting->id)->lockForUpdate()->first();
             if ($locked === null || $locked->status !== MeetingStatus::Reserved) {
                 throw MeetingStatusTransitionException::forCancel();
@@ -262,6 +262,10 @@ class MeetingController extends Controller
                 'canceled_by_user_id' => $actor->id,
                 'canceled_at' => now(),
             ]);
+
+            // 予約時に消費した 1 回分を受講生へ返却する(コーチがキャンセルした場合も返却先は受講生)。
+            // 状態遷移と同一トランザクションで記録し、片方だけ成立する不整合を防ぐ。
+            $refundAction($locked->student, $locked->id);
         });
 
         $meeting->refresh()->loadMissing(['coach', 'student']);
