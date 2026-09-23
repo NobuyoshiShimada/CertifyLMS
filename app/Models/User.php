@@ -250,6 +250,16 @@ class User extends Authenticatable
     }
 
     /**
+     * 受講生本人の AI 相談の会話。
+     *
+     * @return HasMany<AiChatConversation, $this>
+     */
+    public function aiChatConversations(): HasMany
+    {
+        return $this->hasMany(AiChatConversation::class);
+    }
+
+    /**
      * コーチの Google カレンダー連携情報(1 コーチ : 1 連携、未連携なら null)。
      *
      * @return HasOne<GoogleCredential, $this>
