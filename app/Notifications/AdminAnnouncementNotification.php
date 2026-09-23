@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace App\Notifications;
 
-use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
-use Illuminate\Notifications\Notification;
 
 /**
  * Class AdminAnnouncementNotification
@@ -14,10 +12,8 @@ use Illuminate\Notifications\Notification;
  * 業務イベント：管理者による受講生向け一斉お知らせ配信を、対象の受講生へ通知するクラス。
  * 通知詳細ページ(notifications.show)で本文全文を読む自己完結型の通知のため、遷移先 url は持たない。
  */
-class AdminAnnouncementNotification extends Notification
+class AdminAnnouncementNotification extends BaseNotification
 {
-    use Queueable;
-
     /**
      * @var array{title: string, body: string}
      */

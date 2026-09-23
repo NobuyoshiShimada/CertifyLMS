@@ -41,7 +41,8 @@ return [
             'table' => 'jobs',
             'queue' => 'default',
             'retry_after' => 90,
-            'after_commit' => false,
+            // トランザクション内で投入されたジョブは commit 後に投入する(ロールバック時に通知・メールを送らない)
+            'after_commit' => true,
         ],
 
         'beanstalkd' => [

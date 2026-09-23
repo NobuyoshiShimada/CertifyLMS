@@ -4,19 +4,15 @@ declare(strict_types=1);
 
 namespace App\Notifications;
 
-use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
-use Illuminate\Notifications\Notification;
 
 /**
  * Class ChatMessageReceivedNotification
  *
  * 業務イベント：チャットルームへの新着メッセージ投稿を、当事者（自分以外の参加者）へ通知するクラス。
  */
-class ChatMessageReceivedNotification extends Notification
+class ChatMessageReceivedNotification extends BaseNotification
 {
-    use Queueable;
-
     /**
      * @var array{title: string, message: string, url: string}
      */
