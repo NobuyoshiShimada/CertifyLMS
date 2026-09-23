@@ -20,6 +20,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
+use PHPUnit\Framework\Attributes\Group;
 use Tests\Fakes\FakeGoogleCalendarGateway;
 use Tests\TestCase;
 
@@ -27,6 +28,7 @@ use Tests\TestCase;
  * 面談の空き枠 / 予約 / キャンセルと Google カレンダー連携(freebusy 除外・Event 作成 / 削除・フォールバック・
  * トークン自動更新)を検証する機能テスト。Google API は偽の Gateway に差し替える。
  */
+#[Group('external')]
 class MeetingGoogleCalendarTest extends TestCase
 {
     use RefreshDatabase;

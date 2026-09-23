@@ -120,7 +120,17 @@ http://localhost:8000 にアクセスし、下記の[ログインアカウント
 ```bash
 sail artisan test                  # 全テスト実行
 sail artisan test --filter=Xxx    # クラス名・メソッド名で絞り込み
+sail artisan test --exclude-group external   # 外部 API 連携のテストを除外して実行
+sail artisan test --group external           # 外部 API 連携のテストだけを実行
 ```
+
+テストは外部 API(Google カレンダー / Gemini / Stripe)へ実通信しません。
+
+- Laravel の Http Facade 経由でモックしていない通信が発生すると、テストが失敗します(`tests/TestCase.php` の `Http::preventStrayRequests()`)
+- 外部 API 連携のテスト(`#[Group('external')]`)は、連携ごとに次の方法でモックしています。モックの構造は SDK 更新で壊れやすいため、グループ単位で除外できます
+  - Google カレンダー: SDK が独自の HTTP クライアントを使うため、`Google\Client` を Mockery で差し替えます。面談機能側のテストは、連携の窓口(`GoogleCalendarGateway` / `GoogleCalendarService`)ごとスタブ化します
+  - Gemini: Http Facade 経由なので `Http::fake()` で応答を差し替えます
+  - Stripe Webhook: 受信側なので、`tests/Support/StripeWebhookSigner` で正規の署名を生成してリクエストを組み立てます
 
 ## コード整形
 

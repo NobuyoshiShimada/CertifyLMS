@@ -6,6 +6,7 @@ namespace App\Services\GoogleCalendar;
 
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
+use Closure;
 use Google\Client;
 use Google\Service\Calendar;
 use Google\Service\Calendar\Event;
@@ -25,11 +26,20 @@ final class GoogleApiCalendarGateway implements GoogleCalendarGateway
 {
     private const SCOPES = [Calendar::CALENDAR_EVENTS, Calendar::CALENDAR_FREEBUSY];
 
+    /** @var Closure(): Client */
+    private readonly Closure $clientFactory;
+
+    /**
+     * @param (Closure(): Client)|null $clientFactory Google\Client の生成方法(テストで SDK クライアントを差し替えるため。既定は new Client)
+     */
     public function __construct(
         private readonly string $clientId,
         private readonly string $clientSecret,
         private readonly string $redirectUri,
-    ) {}
+        ?Closure $clientFactory = null,
+    ) {
+        $this->clientFactory = $clientFactory ?? fn (): Client => new Client;
+    }
 
     public function authorizationUrl(string $state): string
     {
@@ -110,7 +120,7 @@ final class GoogleApiCalendarGateway implements GoogleCalendarGateway
 
     private function oauthClient(): Client
     {
-        $client = new Client;
+        $client = ($this->clientFactory)();
         $client->setClientId($this->clientId);
         $client->setClientSecret($this->clientSecret);
         $client->setRedirectUri($this->redirectUri);
@@ -124,7 +134,7 @@ final class GoogleApiCalendarGateway implements GoogleCalendarGateway
 
     private function calendar(string $accessToken): Calendar
     {
-        $client = new Client;
+        $client = ($this->clientFactory)();
         $client->setAccessToken($accessToken);
 
         return new Calendar($client);
