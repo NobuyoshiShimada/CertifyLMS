@@ -38,6 +38,7 @@ class ChatUnreadCountService
 
         return ChatMessage::query()
             ->where('chat_room_id', $room->id)
+            ->where('sender_user_id', '!=', $user->id)
             ->when($member->last_read_at !== null, function ($q) use ($member): void {
                 $q->where('created_at', '>', $member->last_read_at);
             })
@@ -45,7 +46,7 @@ class ChatUnreadCountService
     }
 
     /**
-     * 指定 User が参加する複数 ChatRoom の個人別未読件数を 1 集約クエリで返す。
+     * 指定 User が参加する複数 ChatRoom の個人別未読件数を 1 集約クエリで返す(未読の定義は messageCountInRoom と同じ)。
      *
      * room_id をキー、未読件数(0 以上)を値とした連想配列を返す。
      * rooms-pane の各ルーム行で O(1) ルックアップしてバッジ表示する用途で、N+1 を回避する。
@@ -74,6 +75,7 @@ class ChatUnreadCountService
 
         $counts = ChatMessage::query()
             ->whereIn('chat_room_id', $members->pluck('chat_room_id')->all())
+            ->where('sender_user_id', '!=', $user->id)
             ->where(function ($q) use ($members): void {
                 foreach ($members as $member) {
                     $q->orWhere(function ($inner) use ($member): void {
@@ -97,7 +99,8 @@ class ChatUnreadCountService
     }
 
     /**
-     * User が ChatMember として参加しているルームのうち、未読メッセージを 1 件以上含むルーム総数を返す。
+     * User が ChatMember として参加しているルームのうち、未読メッセージ(自分以外が送信、かつ last_read_at より新しい)を
+     * 1 件以上含むルーム総数を返す。
      *
      * サイドバーバッジ `<x-badge>` に表示する整数 1 件分を生成する想定。0 件ならバッジ非表示。
      */
@@ -111,6 +114,7 @@ class ChatUnreadCountService
                 $q->select(DB::raw(1))
                     ->from('chat_messages')
                     ->whereColumn('chat_messages.chat_room_id', 'chat_rooms.id')
+                    ->where('chat_messages.sender_user_id', '!=', $user->id)
                     ->where(function ($inner) use ($user): void {
                         $inner->whereRaw(
                             'chat_messages.created_at > COALESCE((SELECT last_read_at FROM chat_members WHERE chat_members.chat_room_id = chat_rooms.id AND chat_members.user_id = ? LIMIT 1), "1970-01-01")',
