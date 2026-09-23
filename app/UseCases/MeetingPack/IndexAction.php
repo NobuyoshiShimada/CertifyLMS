@@ -17,6 +17,7 @@ final class IndexAction
     public function __invoke(?string $keyword, ?MeetingPackStatus $status, int $perPage = 20): LengthAwarePaginator
     {
         return MeetingPack::query()
+            ->withCount('payments')
             ->when($keyword, fn ($query, $keyword) => $query->where('name', 'like', "%{$keyword}%"))
             ->when($status, fn ($query, $status) => $query->where('status', $status->value))
             ->ordered()
