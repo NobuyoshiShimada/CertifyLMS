@@ -13,6 +13,7 @@ use App\Models\Certificate;
 use App\Models\Certification;
 use App\Models\Enrollment;
 use App\Models\EnrollmentGoal;
+use App\Models\EnrollmentNote;
 use App\Models\EnrollmentStatusLog;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
@@ -75,6 +76,35 @@ final class EnrollmentSeeder extends Seeder
 
         $this->enrollDemoStudents($demoStudents, $publishedCertifications, $admin);
         $this->enrollNoQuotaStudent($publishedCertifications);
+        $this->seedCoachNotes($admin);
+    }
+
+    /**
+     * コーチメモを投入する。各受講登録に「資格の担当コーチ全員」が 1 件ずつ書き、固定 student には管理者メモも添える。
+     *
+     * TOEIC は coach@ / coach2@ の両方が担当するため自分 / 他コーチのメモが混在し、担当外資格の受講登録
+     * (例: coach@ から見た日商簿記)にもメモが入る。受講生本人の受講登録にもメモが入るため、受講生から見えない分離も確認できる。
+     */
+    private function seedCoachNotes(?User $admin): void
+    {
+        $enrollments = Enrollment::query()
+            ->with(['certification.coaches', 'user'])
+            ->orderBy('created_at')
+            ->get();
+
+        foreach ($enrollments as $i => $enrollment) {
+            $authors = collect($enrollment->certification?->coaches?->all() ?? []);
+            if ($admin !== null && $enrollment->user?->email === 'student@certify-lms.test') {
+                $authors->push($admin);
+            }
+
+            foreach ($authors->values() as $j => $author) {
+                EnrollmentNote::factory()
+                    ->forEnrollment($enrollment)
+                    ->byAuthor($author)
+                    ->create(['created_at' => now()->subDays(($i + $j) % 10 + 1)->subHours($j)]);
+            }
+        }
     }
 
     /**
