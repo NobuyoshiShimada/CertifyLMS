@@ -44,6 +44,7 @@ use App\Http\Controllers\SectionQuestionController;
 use App\Http\Controllers\SectionQuizController;
 use App\Http\Controllers\SectionQuizResultController;
 use App\Http\Controllers\Settings\AvailabilityController as SettingsAvailabilityController;
+use App\Http\Controllers\Settings\ProfileController as SettingsProfileController;
 use App\Http\Controllers\Settings\SettingsDefaultEnrollmentController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\WeakDrillController;
@@ -121,6 +122,21 @@ Route::middleware(['auth', 'role:student', 'active-learning'])->group(function (
         ->name('enrollment-goals.unmarkAchieved');
 
 });
+
+// ============================================================
+// 全ロール共通 設定ルート(プロフィール / アバター / パスワード、対象は常に本人)
+// 修了済受講生も使えるよう active-learning は掛けない
+// ============================================================
+Route::middleware('auth')
+    ->prefix('settings')
+    ->name('settings.')
+    ->group(function () {
+        Route::get('profile', [SettingsProfileController::class, 'edit'])->name('profile.edit');
+        Route::patch('profile', [SettingsProfileController::class, 'update'])->name('profile.update');
+        Route::post('avatar', [SettingsProfileController::class, 'storeAvatar'])->name('avatar.store');
+        Route::delete('avatar', [SettingsProfileController::class, 'destroyAvatar'])->name('avatar.destroy');
+        Route::put('password', [SettingsProfileController::class, 'updatePassword'])->name('password.update');
+    });
 
 // ============================================================
 // 受講生専用 設定ルート(デフォルト資格の永続変更)
