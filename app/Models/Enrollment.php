@@ -136,6 +136,17 @@ class Enrollment extends Model
     }
 
     /**
+     * コーチメモ。親の受講登録が論理削除されている場合は一覧から除外する
+     * (受講登録詳細は withTrashed で表示されるため、ここで親の生存を絞り込む)。
+     *
+     * @return HasMany<EnrollmentNote, $this>
+     */
+    public function notes(): HasMany
+    {
+        return $this->hasMany(EnrollmentNote::class)->whereHas('enrollment');
+    }
+
+    /**
      * 個人目標。一覧表示用に EnrollmentGoal::scopeDisplayOrder の順で返す。
      *
      * @return HasMany<EnrollmentGoal, $this>
