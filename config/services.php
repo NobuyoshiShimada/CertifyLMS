@@ -41,4 +41,11 @@ return [
         'currency' => 'jpy',
     ],
 
+    // コーチの Google カレンダー連携(OAuth 2.0)。値は必ず .env 経由で設定する。
+    'google' => [
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'redirect' => env('GOOGLE_REDIRECT_URI', env('APP_URL').'/settings/google-calendar/callback'),
+    ],
+
 ];

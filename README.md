@@ -146,12 +146,27 @@ sail bin pint --test     # 整形漏れの確認（CI 相当のチェック）
   - 同一オリジン運用(既定)では、`APP_URL` のホスト(例: `localhost:8000`)が `SANCTUM_STATEFUL_DOMAINS` に含まれていれば追加設定は不要です
   - FE を別オリジンに置く場合は、その FE のホスト:ポートを `SANCTUM_STATEFUL_DOMAINS` に、オリジン(スキーム付き)を `CORS_ALLOWED_ORIGINS` に追加してください。あわせて Cookie を共有できるよう `SESSION_DOMAIN` の設定が必要です
   - JS は各ページで最初の API 呼び出し前に 1 度だけ `GET /sanctum/csrf-cookie` を呼び、`XSRF-TOKEN` Cookie の値を `X-XSRF-TOKEN` ヘッダで送ります(CSRF トークンのない POST は `419`)
+- `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` / `GOOGLE_REDIRECT_URI` — コーチの Google カレンダー連携(OAuth 2.0)に使用します。値は必ず `.env` で設定し、コードに直接書かないでください。未設定でも面談機能は従来どおり動作します(連携開始だけができません)。設定手順は下記「Google カレンダー連携の動作確認」を参照してください
 - `STRIPE_*` — 追加面談の購入(Stripe Checkout + Webhook)に使用します。キーは必ず `.env` で設定し、コードに直接書かないでください。未設定でも他の機能は動作しますが、購入画面から決済画面へは進めません
   - `STRIPE_SECRET` — API シークレットキー(`sk_test_...`)。Stripe ダッシュボード Developers > API keys で取得します
   - `STRIPE_KEY` — 公開キー(`pk_test_...`)。同じ画面で取得します(Checkout ベースのため現状はサーバ側で未使用)
   - `STRIPE_WEBHOOK_SECRET` — Webhook 署名検証用シークレット(`whsec_...`)。ローカルでは下記の Stripe CLI が表示する値を使います。本番は Developers > Webhooks でエンドポイントを登録して取得します
 
 新しい環境変数やセットアップ手順を追加した場合は、`.env.example` と本 README に追記し、チームの誰でも環境を再現できる状態を保ってください。
+
+## Google カレンダー連携の動作確認
+
+コーチが面談設定タブから自分の Google アカウントを連携すると、Google カレンダー(プライマリカレンダー)に予定がある時刻は受講生の予約画面の空き枠から外れ、面談の予約成立 / キャンセルに合わせて予定が登録 / 削除されます。Google との通信に失敗した場合は「連携なし」として扱い、面談の予約・キャンセル・空き枠の表示は止まりません。
+
+1. [Google Cloud Console](https://console.cloud.google.com/) でプロジェクトを作成し、「Google Calendar API」を有効にします
+2. 「OAuth 同意画面」を作成し、テストユーザーに連携に使う Google アカウントを追加します(スコープ: `calendar.events` / `calendar.freebusy`)
+3. 「認証情報」で OAuth クライアント ID(種類: ウェブ アプリケーション)を作成し、承認済みのリダイレクト URI に `http://localhost:8000/settings/google-calendar/callback` を登録します
+4. 取得したクライアント ID / シークレットを `.env` の `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` に設定し、`sail artisan config:clear` を実行します
+5. コーチ(例: `coach2@certify-lms.test`)でログインし、設定 > 面談設定 の「Googleカレンダーと連携する」から連携します
+
+初期データでは `coach@certify-lms.test` が連携済み、`coach2@certify-lms.test` が未連携です。`coach@` の連携情報はダミーのトークンのため、実際の Google API 呼び出しは失敗し「連携なし」として動作します(連携状態の表示と解除の確認用)。実際の空き枠除外や予定登録は、上記の手順で実アカウントを連携して確認してください。
+
+> **本番運用での注意**: 本機能はアクセストークン / リフレッシュトークンを `google_credentials` テーブルに平文で保存しています。本番運用では、Laravel の暗号化キャスト(`encrypted`)などでトークンを暗号化して保存することを推奨します。
 
 ## 追加面談購入(Stripe)の動作確認
 

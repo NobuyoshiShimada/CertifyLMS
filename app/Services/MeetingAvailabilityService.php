@@ -9,7 +9,10 @@ use App\Exceptions\Mentoring\MeetingOutOfAvailabilityException;
 use App\Models\Certification;
 use App\Models\CoachAvailability;
 use App\Models\Meeting;
+use App\Models\User;
+use App\Services\GoogleCalendar\GoogleCalendarService;
 use Carbon\Carbon;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
 
 /**
@@ -21,6 +24,8 @@ use Illuminate\Support\Collection;
  */
 final class MeetingAvailabilityService
 {
+    public function __construct(private readonly GoogleCalendarService $googleCalendar) {}
+
     /**
      * 指定 Certification の担当コーチ集合について、指定日 1 日分の 60 分単位空きスロットを返す。
      *
@@ -34,7 +39,7 @@ final class MeetingAvailabilityService
         $dayEnd = $date->copy()->endOfDay();
         $dayOfWeek = $date->dayOfWeek;
 
-        $coaches = $certification->coaches()->get();
+        $coaches = $certification->coaches()->with('googleCredential')->get();
         if ($coaches->isEmpty()) {
             return collect();
         }
@@ -59,6 +64,11 @@ final class MeetingAvailabilityService
             ->map(fn ($rows) => $rows->map(fn (Meeting $m) => $m->scheduled_at->format('H:i'))->all());
 
         /** @var array<string, int> $slotCounts スロット開始時刻(H:i) → available coach 数 */
+        // Google カレンダー連携済コーチの予定(1 コーチ 1 リクエスト、未連携 / 取得失敗は予定なし扱い)
+        $googleBusyByCoach = $coaches
+            ->filter(fn (User $coach) => $coach->googleCredential !== null)
+            ->mapWithKeys(fn (User $coach) => [$coach->id => $this->googleCalendar->busyIntervals($coach, $dayStart, $dayEnd)]);
+
         $slotCounts = [];
 
         foreach ($availabilities as $availability) {
@@ -70,7 +80,9 @@ final class MeetingAvailabilityService
                 $coachId = $availability->coach_id;
                 $booked = $bookedByCoach[$coachId] ?? [];
 
-                if (! in_array($slotKey, $booked, true)) {
+                $googleBusy = $this->overlapsAny($googleBusyByCoach[$coachId] ?? [], $slot, $slot->copy()->addHour());
+
+                if (! in_array($slotKey, $booked, true) && ! $googleBusy) {
                     $slotCounts[$slotKey] = ($slotCounts[$slotKey] ?? 0) + 1;
                 }
 
@@ -108,5 +120,19 @@ final class MeetingAvailabilityService
         if (! $matched) {
             throw new MeetingOutOfAvailabilityException;
         }
+    }
+
+    /**
+     * @param list<array{start: CarbonInterface, end: CarbonInterface}> $intervals
+     */
+    private function overlapsAny(array $intervals, CarbonInterface $start, CarbonInterface $end): bool
+    {
+        foreach ($intervals as $interval) {
+            if ($interval['start']->lt($end) && $interval['end']->gt($start)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
