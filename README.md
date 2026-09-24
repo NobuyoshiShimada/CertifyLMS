@@ -8,9 +8,9 @@
 
 | ロール | 機能 |
 |---|---|
-| 受講生（student） | 教材閲覧 / 演習問題・苦手分野ドリル / 模擬試験（分野別ヒートマップ・合格可能性スコア）/ 面談予約 / チャット / 学習時間・進捗・ストリーク管理 / 修了証の受領 |
-| コーチ（coach） | 教材・演習問題・模試の管理 / 担当受講生の進捗フォロー / 面談対応・面談メモ / チャット |
-| 管理者（admin） | ユーザー招待・管理 / 資格・資格分類マスタ管理 / 資格へのコーチ割当 / 面談回数の付与 / 全体ダッシュボード |
+| 受講生（student） | 教材閲覧 / 演習問題・苦手分野ドリル / 模擬試験（分野別ヒートマップ・合格可能性スコア）/ 面談予約 / 追加面談の購入（Stripe）/ チャット / AI 相談（Gemini）/ 学習時間・進捗・ストリーク管理 / 修了証の受領（PDF ダウンロード）/ 通知 |
+| コーチ（coach） | 教材・演習問題・模試の管理 / 担当受講生の進捗フォロー / 面談対応・面談メモ / Google カレンダー連携 / チャット / 質問掲示板の回答 |
+| 管理者（admin） | ユーザー招待・管理 / 資格・資格分類マスタ管理 / 資格へのコーチ割当 / 面談回数の付与・面談パック管理 / お知らせ一斉配信 / 質問掲示板・チャットのモデレーション / 全体ダッシュボード |
 
 ## 動作環境
 
@@ -150,6 +150,9 @@ sail bin pint --test     # 整形漏れの確認（CI 相当のチェック）
 - PHPUnit / Laravel Pint
 - league/commonmark（教材本文の Markdown レンダリング）
 - Pusher（チャットのリアルタイム配信）
+- google/apiclient（Google カレンダー連携）/ stripe/stripe-php（追加面談の決済）/ Gemini API（AI 相談、Laravel HTTP クライアント経由）
+- mpdf/mpdf（修了証 PDF の生成）
+- Laravel Queue（database ドライバ、通知・メールの非同期送信）/ Laravel Cache（管理者ダッシュボード集計）
 - Docker（Laravel Sail）
 
 ## 環境変数
@@ -177,6 +180,25 @@ sail bin pint --test     # 整形漏れの確認（CI 相当のチェック）
   - `STRIPE_WEBHOOK_SECRET` — Webhook 署名検証用シークレット(`whsec_...`)。ローカルでは下記の Stripe CLI が表示する値を使います。本番は Developers > Webhooks でエンドポイントを登録して取得します
 
 新しい環境変数やセットアップ手順を追加した場合は、`.env.example` と本 README に追記し、チームの誰でも環境を再現できる状態を保ってください。
+
+## 定期実行（スケジューラ）
+
+受講期限切れの不合格化・招待の期限切れ・面談の自動完了・面談リマインダーなどは Laravel のスケジューラで定期実行されます。開発中に動かす場合は、別ターミナルで次を起動しておいてください（停止は Ctrl+C）。
+
+```bash
+sail artisan schedule:work
+```
+
+| コマンド | 実行タイミング | 内容 |
+|---|---|---|
+| `enrollments:fail-expired` | 毎日 00:00 | 目標受験日を過ぎた受講登録を不合格にする |
+| `invitations:expire` | 毎日 00:30 | 期限切れの招待を失効させる |
+| `users:graduate-expired` | 毎日 00:45 | プラン期間が満了した受講生を卒業（graduated）にする |
+| `learning:close-stale-sessions` | 毎日 01:00（`config/learning.php` で変更可） | 閉じられていない学習セッションを締める |
+| `meetings:auto-complete` | 15 分ごと | 終了時刻を過ぎた面談を完了にする |
+| `notifications:send-meeting-reminders` | 毎日 18:00（前日分）/ 15 分ごと（開始 1 時間前分） | 予約済み面談のリマインダーを通知する |
+
+個別に手動実行する場合は `sail artisan <コマンド>` を実行します。本番環境ではサーバの cron に `* * * * * php artisan schedule:run` を登録してください。
 
 ## 通知・メール配信（キュー）
 

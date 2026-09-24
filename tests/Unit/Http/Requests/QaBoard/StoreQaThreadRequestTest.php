@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Tests\Unit\Requests;
+namespace Tests\Unit\Http\Requests\QaBoard;
 
 use App\Http\Requests\QaBoard\StoreQaThreadRequest;
 use Illuminate\Support\Facades\Validator;
@@ -11,7 +11,7 @@ use Tests\TestCase;
 /**
  * StoreQaThreadRequest のバリデーションルールおよび属性名を検証する単体テスト。
  */
-class QaThreadRequestTest extends TestCase
+class StoreQaThreadRequestTest extends TestCase
 {
     /**
      * 必須項目が空のときにバリデーションが正しく失敗することを検証する。
