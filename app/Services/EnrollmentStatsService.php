@@ -6,12 +6,14 @@ namespace App\Services;
 
 use App\Enums\EnrollmentStatus;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 /**
  * Enrollment 集計を提供する Service。admin ダッシュボード KPI で利用される。
  *
- * 全体 KPI(adminKpi)と資格別修了率(completionRateByCertification)は全 enrollment を走査する重い集計。
+ * 全体 KPI(adminKpi)と資格別修了率(completionRateByCertification)は全 enrollment を走査する重い集計のため、
+ * config/dashboard.php の TTL でキャッシュする。受講状態の遷移時は forgetAdminCaches() で 2 キーとも無効化する。
  *
  * 集計対象は SoftDelete 除外。paused 集計は採用しない(3 値モデル)。
  * 受講生ダッシュボードの Action / Controller テストで Mockery 経由 mock するため `final` は付けない。
@@ -24,6 +26,44 @@ class EnrollmentStatsService
      * @return array{learning_count: int, passed_count: int, failed_count: int, total: int, by_certification: array<int, array{certification_id: string, certification_name: string, learning: int, passed: int, failed: int, total: int}>}
      */
     public function adminKpi(): array
+    {
+        return Cache::remember(
+            (string) config('dashboard.admin_kpi_cache_key'),
+            $this->cacheTtl(),
+            fn (): array => $this->computeAdminKpi(),
+        );
+    }
+
+    /**
+     * 資格別の修了率(passed / 全件)を Collection で返す(キャッシュ付き。キー / TTL は config/dashboard.php)。
+     * 0 件の資格は除外する(0 % 表示は意味がないため)。
+     * 一覧は受講生数(total)の多い順。
+     *
+     * @return Collection<int, array{certification_id: string, certification_name: string, learning: int, passed: int, failed: int, total: int, completion_rate: float}>
+     */
+    public function completionRateByCertification(): Collection
+    {
+        return Cache::remember(
+            (string) config('dashboard.admin_completion_rate_cache_key'),
+            $this->cacheTtl(),
+            fn (): Collection => $this->computeCompletionRateByCertification(),
+        );
+    }
+
+    /**
+     * 管理者ダッシュボード集計のキャッシュ(全体 KPI / 資格別修了率の 2 キー)を無効化する。
+     * 受講状態の遷移を記録するチョークポイント(EnrollmentStatusChangeService)から呼ばれる。
+     */
+    public function forgetAdminCaches(): void
+    {
+        Cache::forget((string) config('dashboard.admin_kpi_cache_key'));
+        Cache::forget((string) config('dashboard.admin_completion_rate_cache_key'));
+    }
+
+    /**
+     * @return array{learning_count: int, passed_count: int, failed_count: int, total: int, by_certification: array<int, array{certification_id: string, certification_name: string, learning: int, passed: int, failed: int, total: int}>}
+     */
+    private function computeAdminKpi(): array
     {
         $counts = DB::table('enrollments')
             ->whereNull('deleted_at')
@@ -69,13 +109,9 @@ class EnrollmentStatsService
     }
 
     /**
-     * 資格別の修了率(passed / 全件)を Collection で返す。
-     * 0 件の資格は除外する(0 % 表示は意味がないため)。
-     * 一覧は受講生数(total)の多い順、上位 10 件まで。
-     *
      * @return Collection<int, array{certification_id: string, certification_name: string, learning: int, passed: int, failed: int, total: int, completion_rate: float}>
      */
-    public function completionRateByCertification(): Collection
+    private function computeCompletionRateByCertification(): Collection
     {
         return collect($this->byCertification())
             ->filter(fn (array $row): bool => $row['total'] > 0)
@@ -86,6 +122,11 @@ class EnrollmentStatsService
             })
             ->sortByDesc('total')
             ->values();
+    }
+
+    private function cacheTtl(): int
+    {
+        return (int) config('dashboard.admin_stats_cache_ttl');
     }
 
     /**

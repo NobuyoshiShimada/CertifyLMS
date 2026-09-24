@@ -169,6 +169,7 @@ sail bin pint --test     # 整形漏れの確認（CI 相当のチェック）
   - `AI_CHAT_DAILY_MESSAGE_LIMIT`(既定 50)は受講生 1 人あたりの 1 日の送信上限、`AI_CHAT_HISTORY_LIMIT`(既定 20)は AI に渡す直近の会話履歴の件数、`AI_CHAT_TITLE_GENERATION_ENABLED` は会話タイトルの AI 自動生成の ON / OFF です
   - AI 応答の失敗などの運用ログは `storage/logs/ai-chat-*.log` に出力されます
 - `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` / `GOOGLE_REDIRECT_URI` — コーチの Google カレンダー連携(OAuth 2.0)に使用します。値は必ず `.env` で設定し、コードに直接書かないでください。未設定でも面談機能は従来どおり動作します(連携開始だけができません)。設定手順は下記「Google カレンダー連携の動作確認」を参照してください
+- `ADMIN_DASHBOARD_CACHE_TTL` — 管理者ダッシュボードの全体 KPI / 資格別修了率をキャッシュする秒数(既定 300 = 5 分)。受講状態の遷移(受講登録 / 合格 / 不合格 / 再開など)では即時に無効化され、それ以外の変化(資格の公開・非公開、受講登録の削除など)は TTL の失効で反映されます
 - `QUEUE_CONNECTION` — 通知・メール送信のキュー接続です。既定は `database`(`jobs` テーブル)で、外部ミドルウェアは不要です。`sync` にすると従来どおり発火元リクエスト内で同期送信します(worker 不要)
 - `STRIPE_*` — 追加面談の購入(Stripe Checkout + Webhook)に使用します。キーは必ず `.env` で設定し、コードに直接書かないでください。未設定でも他の機能は動作しますが、購入画面から決済画面へは進めません
   - `STRIPE_SECRET` — API シークレットキー(`sk_test_...`)。Stripe ダッシュボード Developers > API keys で取得します
