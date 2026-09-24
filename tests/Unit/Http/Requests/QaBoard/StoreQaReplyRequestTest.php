@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Tests\Unit\Requests;
+namespace Tests\Unit\Http\Requests\QaBoard;
 
 use App\Http\Requests\QaBoard\StoreQaReplyRequest;
 use Illuminate\Support\Facades\Validator;

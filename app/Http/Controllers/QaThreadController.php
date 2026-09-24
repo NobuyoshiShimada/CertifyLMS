@@ -102,7 +102,7 @@ class QaThreadController extends Controller
         }
 
         return redirect()->route('qa-board.show', $thread)
-            ->with('status', '質問を投稿しました。');
+            ->with('success', '質問を投稿しました。');
     }
 
     /**
@@ -226,14 +226,8 @@ class QaThreadController extends Controller
      */
     public function indexAsAdmin(Request $request): View
     {
-        $threads = QaThread::query()
-            ->with(['user'])
-            ->withCount(['replies'])
-            ->orderBy('created_at', 'desc')
-            ->paginate(20);
-
-        // 管理者用のビュー（例: admin.qa_board.index など、実際のパスに合わせて調整してください）
-        return view('admin.qa_board.index', compact('threads'));
+        // 公開一覧と同じ Blade を使う(Blade 側が admin.* ルートで管理者表示に切り替える)
+        return $this->index($request);
     }
 
     /**
@@ -274,7 +268,7 @@ class QaThreadController extends Controller
             ->withCount(['replies'])
             ->findOrFail($thread);
 
-        // 管理者用の詳細ビュー（例: admin.qa_board.show など、実際のパスに合わせて調整してください）
-        return view('admin.qa_board.show', ['thread' => $qaThread]);
+        // 公開詳細と同じ Blade を使う(Blade 側が admin.* ルートで管理者表示に切り替える)
+        return view('qa-thread.show', ['thread' => $qaThread]);
     }
 }
