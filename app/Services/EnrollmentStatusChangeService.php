@@ -8,18 +8,22 @@ use App\Enums\EnrollmentStatus;
 use App\Models\Enrollment;
 use App\Models\EnrollmentStatusLog;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Enrollment 状態遷移の監査ログ(`EnrollmentStatusLog`)を INSERT する Service。
  *
  * 呼出側 Action がトランザクション内で recordStatusChange() を呼ぶ前提。本 Service 自体は
  * DB::transaction() を持たない(`backend-services.md` の規約準拠、ステートレス INSERT only)。
+ * 受講状態遷移の共通チョークポイントとして、管理者ダッシュボード集計のキャッシュ無効化も担う。
  *
  * `final` 不採用: Mockery で recordStatusChange を mock してトランザクション原子性の rollback 検証を
  * Action テストで行う可能性があるため(`UserStatusChangeService` と同じ判断軸)。
  */
 final class EnrollmentStatusChangeService
 {
+    public function __construct(private readonly EnrollmentStatsService $stats) {}
+
     /**
      * @param Enrollment $enrollment 状態遷移する対象 Enrollment
      * @param ?EnrollmentStatus $fromStatus 遷移前ステータス(初回登録時のみ null、それ以降は必須)
@@ -34,12 +38,19 @@ final class EnrollmentStatusChangeService
         ?User $changedBy,
         ?string $reason = null,
     ): EnrollmentStatusLog {
-        return $enrollment->statusLogs()->create([
+        $log = $enrollment->statusLogs()->create([
             'from_status' => $fromStatus?->value,
             'to_status' => $toStatus->value,
             'changed_by_user_id' => $changedBy?->id,
             'changed_reason' => $reason,
             'changed_at' => now(),
         ]);
+
+        // 受講状態の件数・修了率が変わるため、管理者ダッシュボード集計のキャッシュ(2 キー)を無効化する。
+        // 即時に消したうえで commit 後にも消し、commit 前に他リクエストが古い値を再キャッシュした場合も取り除く
+        $this->stats->forgetAdminCaches();
+        DB::afterCommit(fn () => $this->stats->forgetAdminCaches());
+
+        return $log;
     }
 }
