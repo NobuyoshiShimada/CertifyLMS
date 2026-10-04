@@ -42,6 +42,11 @@ class EnrollmentGoal extends Model
         return $this->belongsTo(Enrollment::class);
     }
 
+    public function isAchieved(): bool
+    {
+        return $this->achieved_at !== null;
+    }
+
     /**
      * 一覧の表示順。未達成を先頭 → 目標期日が近い順(期日未設定は期日ありの後ろ)→ 作成日の新しい順。
      *
